@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AnalysisContext } from '../src/analysis/context.js';
-import { analyzeTrades, dynastyFactor } from '../src/analysis/trades.js';
+import { analyzeTrades, dynastyFactor, positionalTradeFactor, replacementLevels, tradeMarketValue } from '../src/analysis/trades.js';
 import { suggestFaab } from '../src/analysis/waivers.js';
 import { parseLeague, type TeamRoster } from '../src/league/settings.js';
 import type { Projection } from '../src/model/projection.js';
@@ -29,7 +29,7 @@ describe('trade search', () => {
     const ctx = buildCtx(
       [proj('qbA', 'QB', 20), proj('qbB', 'QB', 18), proj('rbWeak', 'RB', 5), proj('wr1', 'WR', 10),
        proj('qbC', 'QB', 8), proj('rbStrong', 'RB', 15), proj('rb2', 'RB', 14), proj('wr2', 'WR', 10),
-       proj('faQB', 'QB', 6), proj('faRB', 'RB', 4), proj('faWR', 'WR', 4)],
+       proj('faQB', 'QB', 2), proj('faRB', 'RB', 4), proj('faWR', 'WR', 4)],
       { 1: ['qbA', 'qbB', 'rbWeak', 'wr1'], 2: ['qbC', 'rbStrong', 'rb2', 'wr2'] },
     );
     const [best] = await analyzeTrades(ctx);
@@ -63,5 +63,40 @@ describe('valuation helpers', () => {
     expect(suggestFaab({ rosGain: 1000, trendingAdds: 0 }, 100, 10)).toBe(40);
     expect(suggestFaab({ rosGain: 10, trendingAdds: 50000 }, 100, 10)).toBe(8);
     expect(suggestFaab({ rosGain: 10, trendingAdds: 0 }, 0, 10)).toBe(0);
+  });
+});
+
+describe('positional trade value', () => {
+  it('values equal replacement surplus as RB > WR > QB in 1QB', () => {
+    const ctx = buildCtx([proj('qb', 'QB', 25), proj('rb', 'RB', 15), proj('wr', 'WR', 18),
+      proj('faq', 'QB', 20), proj('far', 'RB', 10), proj('faw', 'WR', 13)],
+      { 1: ['qb', 'rb', 'wr'] });
+    const repl = replacementLevels(ctx, ctx.ros!);
+    const value = (id: string) => tradeMarketValue(ctx.weekProj.get(id)!, ctx, repl);
+    expect(value('rb')).toBeGreaterThan(value('wr'));
+    expect(value('wr')).toBeGreaterThan(value('qb'));
+    expect(value('qb')).toBeCloseTo(12);
+  });
+
+  it('respects the league market preference RB > WR > TE > QB > K > DEF', () => {
+    const league = buildCtx([], { 1: [] }).league;
+    const factors = ['RB', 'WR', 'TE', 'QB', 'K', 'DEF'].map(pos => positionalTradeFactor(pos, league));
+    for (let i = 1; i < factors.length; i++) expect(factors[i - 1]).toBeGreaterThan(factors[i]!);
+  });
+
+  it('does not discount QBs in superflex or 2QB', () => {
+    const league = buildCtx([], { 1: [] }).league;
+    expect(positionalTradeFactor('QB', league)).toBe(0.8);
+    expect(positionalTradeFactor('QB', { ...league, starterSlots: ['QB', 'SUPER_FLEX'] })).toBe(1);
+    expect(positionalTradeFactor('QB', { ...league, starterSlots: ['QB', 'QB'] })).toBe(1);
+  });
+
+  it('rejects exchanging a replaceable high-scoring QB for a scarce RB', async () => {
+    const ctx = buildCtx([proj('q1', 'QB', 30), proj('q2', 'QB', 29), proj('r1', 'RB', 5), proj('w1', 'WR', 10),
+      proj('q3', 'QB', 10), proj('r2', 'RB', 18), proj('r3', 'RB', 17), proj('w2', 'WR', 10),
+      proj('faq', 'QB', 28), proj('far', 'RB', 4)],
+      { 1: ['q1', 'q2', 'r1', 'w1'], 2: ['q3', 'r2', 'r3', 'w2'] });
+    const ideas = await analyzeTrades(ctx);
+    expect(ideas.some(t => t.give.every(p => p.position === 'QB') && t.get.some(p => p.position === 'RB'))).toBe(false);
   });
 });

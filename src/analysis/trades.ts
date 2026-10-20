@@ -20,7 +20,7 @@ export interface TradeIdea {
 const TRADEABLE = new Set(['QB', 'RB', 'WR', 'TE']);
 /** Quanto o outro lado pode perder (pts ROS) e ainda assim provavelmente aceitar. */
 const ACCEPT_TOLERANCE = 2;
-/** Não pedir mais de 20% de valor de mercado além do que ofereço. */
+/** Limita a diferença de valor de mercado a 20% para qualquer lado. */
 const MAX_VORP_PREMIUM = 1.2;
 /** Para trocas 2x1 só os N mais valiosos de cada lado entram na combinação. */
 const PAIR_POOL = 10;
@@ -34,6 +34,29 @@ export function replacementLevels(ctx: AnalysisContext, ros: Map<string, RosValu
     if (v > (levels.get(p.position) ?? 0)) levels.set(p.position, v);
   }
   return levels;
+}
+
+/** Preferência de mercado da liga, aplicada ao excedente sobre os waivers.
+ * Heurística: não altera pontos projetados nem o lineup. Em 2QB/superflex,
+ * a demanda por QBs muda e o desconto de formato 1QB não se aplica.
+ */
+export function positionalTradeFactor(position: string, league: LeagueSettings): number {
+  if (position === 'RB') return 1.25;
+  if (position === 'WR') return 1.1;
+  if (position === 'K') return 0.5;
+  if (position === 'DEF') return 0.4;
+  if (position === 'QB') {
+    const multiQb = league.starterSlots.includes('SUPER_FLEX') || league.starterSlots.filter((s) => s === 'QB').length > 1;
+    return multiQb ? 1 : 0.8;
+  }
+  return 1;
+}
+
+/** Valor para negociação: excedente sobre reposição × preferência posicional × idade. */
+export function tradeMarketValue(p: Projection, ctx: AnalysisContext, replacement: Map<string, number>): number {
+  const surplus = Math.max(0, (ctx.ros?.get(p.sleeperId)?.total ?? 0) - (replacement.get(p.position) ?? 0));
+  const ageFactor = ctx.league.type === 'dynasty' ? dynastyFactor(p.position, p.age) : 1;
+  return surplus * positionalTradeFactor(p.position, ctx.league) * ageFactor;
 }
 
 /** Fator de valor futuro para ligas dynasty (curva de idade simplificada por posição). */
@@ -58,10 +81,7 @@ export async function analyzeTrades(ctx: AnalysisContext, opts: { limit?: number
   const { league, weekProj, ros } = ctx;
   const valuer = RosterValuer.restOfSeason(league, weekProj, ros);
   const repl = replacementLevels(ctx, ros);
-  const vorp = (p: Projection) => {
-    const base = Math.max(0, (ros.get(p.sleeperId)?.total ?? 0) - (repl.get(p.position) ?? 0));
-    return league.type === 'dynasty' ? base * dynastyFactor(p.position, p.age) : base;
-  };
+  const vorp = (p: Projection) => tradeMarketValue(p, ctx, repl);
 
   // Melhores free agents para ocupar vagas liberadas em trocas 2x1
   const freeAgents = [...weekProj.values()]
@@ -98,7 +118,7 @@ export async function analyzeTrades(ctx: AnalysisContext, opts: { limit?: number
         if (vGive <= 0) continue;
         for (const get of gets) {
           const vGet = get.reduce((s, p) => s + vorp(p), 0);
-          if (vGet <= 0 || vGet > vGive * MAX_VORP_PREMIUM) continue;
+          if (vGet <= 0 || vGet > vGive * MAX_VORP_PREMIUM || vGive > vGet * MAX_VORP_PREMIUM) continue;
 
           const giveIds = new Set(give.map((p) => p.sleeperId));
           const getIds = get.map((p) => p.sleeperId);

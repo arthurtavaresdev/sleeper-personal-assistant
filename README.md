@@ -113,3 +113,9 @@ DynastyProcess IDs ┘                    └─ model.team_usage ───┘  
 pnpm test          # vitest
 pnpm typecheck
 ```
+
+### Valor posicional nas trocas
+
+O valor de negociação usa o excedente projetado no restante da temporada sobre o melhor free agent da posição, ponderado pela preferência de mercado da liga: **RB > WR > TE > QB > K > DEF**. Os fatores heurísticos são, respectivamente, 1,25 / 1,10 / 1,00 / 0,80 / 0,50 / 0,40. Eles não alteram pontos projetados. Assim, um QB com muitos pontos pode ter pouco valor de troca quando há substitutos próximos nos waivers. O desconto de QB não se aplica em 2QB ou superflex.
+
+As sugestões exigem equilíbrio de valor para os dois lados (diferença máxima de 20%), além do ganho de lineup. K e DEF continuam fora das sugestões automáticas. Em dynasty, aplica-se também a curva de idade. Esses fatores representam uma preferência da liga, não preços medidos de mercado.
