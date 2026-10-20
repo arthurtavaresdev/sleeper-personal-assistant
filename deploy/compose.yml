@@ -1,0 +1,17 @@
+services:
+  db:
+    image: docker.io/library/postgres:17
+    container_name: sleeper-trader-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sleeper
+      POSTGRES_PASSWORD: sleeper
+      POSTGRES_DB: sleeper
+      TZ: America/Sao_Paulo
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro,Z
+volumes:
+  pgdata:
