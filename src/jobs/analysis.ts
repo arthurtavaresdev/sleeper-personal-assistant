@@ -1,3 +1,5 @@
+import { analyzeInbox, tradeFingerprint } from '../analysis/inbox.js';
+import { formatInbox } from '../notify/inbox.js';
 import { analyzeClaims } from '../analysis/claims.js';
 import { loadContext } from '../analysis/context.js';
 import { analyzeLineup } from '../analysis/lineup.js';
@@ -10,12 +12,14 @@ import { selectedLeagueIds } from '../league/selection.js';
 import { escapeHtml } from '../notify/telegram.js';
 import { activePlayers, loadLeague } from '../league/settings.js';
 import { formatClaims, formatInjuryAlert, formatLineup, formatTrades, formatWaivers } from '../notify/format.js';
-import { graphqlConfigured } from '../sleeper/graphql.js';
+import { graphqlConfigured, myTradeInbox } from '../sleeper/graphql.js';
 import { drainOutbox, enqueue } from '../notify/outbox.js';
 import { runSync } from './sync.js';
 
 export interface JobOptions {
   leagueId?: string;
+  /** Inbox agendado: notifica somente propostas novas ou alteradas. */
+  newOnly?: boolean;
   notify?: boolean;
   week?: number;
   /** Envia mesmo que o conteúdo seja igual a uma mensagem já enviada (comandos do bot). */
@@ -29,13 +33,13 @@ export interface JobResult {
   delivered: boolean;
 }
 
-async function deliver(kind: string, scope: string, html: string, opts: JobOptions): Promise<JobResult> {
+async function deliver(kind: string, scope: string, html: string, opts: JobOptions, dedupeByScope = false): Promise<JobResult> {
   const league = opts.leagueId ? await loadLeague(opts.leagueId) : null;
   if (league) html = `<b>${escapeHtml(league.name)}</b>\n\n${html}`;
   scope = `${opts.leagueId ?? 'default'}:${scope}`;
   if (!opts.notify) return { text: html, delivered: false };
   const s = opts.force ? `${scope}:${Date.now()}` : scope;
-  const queued = await enqueue(kind, s, html);
+  const queued = await enqueue(kind, s, html, { dedupeByScope });
   if (!queued) log.info({ kind }, 'mensagem idêntica já enviada; ignorando');
   await drainOutbox();
   return { text: html, delivered: true };
@@ -88,6 +92,26 @@ function runClaimsSingle(opts: JobOptions = {}): Promise<JobResult> {
     if (!ctx.league.faab.enabled) return { text: 'A liga não usa FAAB.', delivered: false };
     const html = formatClaims(await analyzeClaims(ctx), faabLeft(ctx));
     return deliver('claims', `${season}-w${ctx.week}`, html, opts);
+  });
+}
+
+function runInboxSingle(opts: JobOptions = {}): Promise<JobResult> {
+  return locked(`inbox:${opts.leagueId}`, async () => {
+    if (!graphqlConfigured()) return { text: 'Configure SLEEPER_TOKEN no .env para consultar suas propostas de trade.', delivered: false };
+    const { season, week } = await runSync({ leagueId: opts.leagueId });
+    const ctx = await loadContext(season, week, { ros: true, leagueId: opts.leagueId });
+    if (!ctx.mine.ownerId) throw new Error('Seu roster não tem proprietário identificado.');
+    const trades = await myTradeInbox(ctx.league.id, ctx.mine.rosterId, ctx.mine.ownerId);
+    const reports = await analyzeInbox(ctx, trades);
+    if (opts.newOnly && opts.notify) {
+      for (const report of reports) {
+        const trade = trades.find(t => t.transaction_id === report.transactionId)!;
+        await deliver('inbox', `${trade.transaction_id}:${tradeFingerprint(trade)}`,
+          formatInbox([report], ctx.weekProj), opts, true);
+      }
+      return { text: '', delivered: true };
+    }
+    return deliver('inbox', `${season}-w${week}`, formatInbox(reports, ctx.weekProj), opts);
   });
 }
 
@@ -171,3 +195,5 @@ export const runWaiversJob = (opts: JobOptions = {}) => forLeagues(opts, runWaiv
 export const runClaimsJob = (opts: JobOptions = {}) => forLeagues(opts, runClaimsSingle);
 export const runTradesJob = (opts: JobOptions & { partner?: string } = {}) => forLeagues(opts, runTradesSingle);
 export const runInjuriesJob = (opts: JobOptions = {}) => forLeagues(opts, runInjuriesSingle);
+
+export const runInboxJob = (opts: JobOptions = {}) => forLeagues(opts, runInboxSingle);

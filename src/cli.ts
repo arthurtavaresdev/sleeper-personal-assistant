@@ -3,7 +3,7 @@ import { sql } from './db/index.js';
 import { log } from './log.js';
 import { requireLeagueId } from './config.js';
 import { loadLeague } from './league/settings.js';
-import { runClaimsJob, runInjuriesJob, runLineupJob, runTradesJob, runWaiversJob, type JobResult } from './jobs/analysis.js';
+import { runInboxJob, runClaimsJob, runInjuriesJob, runLineupJob, runTradesJob, runWaiversJob, type JobResult } from './jobs/analysis.js';
 import { runBacktest } from './jobs/backtest.js';
 import { runBot } from './jobs/bot.js';
 import { runSetup } from './jobs/setup.js';
@@ -71,6 +71,14 @@ program
   .option('-l, --league-id <id>', 'analisa somente esta liga')
   .option('-n, --notify', 'envia no Telegram')
   .action(async (o) => print(await runClaimsJob(o)));
+
+program
+  .command('inbox')
+  .description('propostas de trade recebidas, com avaliação (requer SLEEPER_TOKEN)')
+  .option('--new-only', 'com --notify, envia somente propostas novas ou alteradas')
+  .option('-l, --league-id <id>', 'analisa somente esta liga')
+  .option('-n, --notify', 'envia no Telegram')
+  .action(async (o) => print(await runInboxJob(o)));
 
 program
   .command('trades')

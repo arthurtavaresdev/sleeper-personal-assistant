@@ -7,10 +7,11 @@ import { sendMessage, telegramConfigured } from './telegram.js';
  * Enfileira uma mensagem. A dedupe_key combina tipo, semana e hash do conteúdo:
  * a mesma sugestão não é reenviada; uma sugestão diferente gera mensagem nova.
  */
-export async function enqueue(kind: string, scope: string, body: string): Promise<boolean> {
+export async function enqueue(kind: string, scope: string, body: string, opts: { dedupeByScope?: boolean } = {}): Promise<boolean> {
   const hash = createHash('sha256').update(body).digest('hex').slice(0, 16);
+  const key = opts.dedupeByScope ? `${kind}:${scope}` : `${kind}:${scope}:${hash}`;
   const rows = await sql`
-    INSERT INTO app.outbox (kind, dedupe_key, body) VALUES (${kind}, ${`${kind}:${scope}:${hash}`}, ${body})
+    INSERT INTO app.outbox (kind, dedupe_key, body) VALUES (${kind}, ${key}, ${body})
     ON CONFLICT (dedupe_key) DO NOTHING RETURNING id`;
   return rows.length > 0;
 }

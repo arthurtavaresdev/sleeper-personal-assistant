@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { config } from '../config.js';
-import { Transaction } from './types.js';
+import { Transaction, TradeTransaction } from './types.js';
 
 /**
  * API GraphQL interna do sleeper.com, autenticada com o token da SUA sessão.
@@ -17,6 +17,7 @@ async function query<T extends z.ZodType>(op: string, gql: string, schema: T): P
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: config.SLEEPER_TOKEN, 'x-sleeper-graphql-op': op },
     body: JSON.stringify({ operationName: op, variables: {}, query: gql }),
+    signal: AbortSignal.timeout(20_000),
   });
   if (res.status === 401 || res.status === 403) throw new Error('SLEEPER_TOKEN inválido ou expirado');
   if (!res.ok) throw new Error(`Sleeper GraphQL ${op}: HTTP ${res.status}`);
@@ -37,4 +38,24 @@ export async function myPendingClaims(leagueId: string, myRosterId: number): Pro
   }`;
   const claims = await query('league_transactions_filtered', gql, z.array(Transaction));
   return claims.filter((c) => c.roster_ids.includes(myRosterId));
+}
+
+/** Somente propostas recebidas pelo próprio roster, ainda sem o seu aceite. */
+export function isIncomingTrade(t: TradeTransaction, leagueId: string, rosterId: number, userId: string): boolean {
+  return t.league_id === leagueId && t.type === 'trade' && t.status === 'proposed'
+    && t.roster_ids.includes(rosterId) && !t.consenter_ids.includes(rosterId) && t.creator !== userId;
+}
+
+export async function myTradeInbox(leagueId: string, rosterId: number, userId: string): Promise<TradeTransaction[]> {
+  if (!/^\d+$/.test(leagueId) || !Number.isInteger(rosterId) || rosterId <= 0) throw new Error('league/roster inválidos');
+  const gql = `query league_transactions_filtered {
+    league_transactions_filtered(league_id: "${leagueId}", roster_id_filters: [${rosterId}],
+      type_filters: ["trade"], status_filters: ["proposed"], limit: 200) {
+      transaction_id league_id type status leg roster_ids creator consenter_ids
+      adds drops draft_picks waiver_budget settings metadata
+    }
+  }`;
+  const trades = await query('league_transactions_filtered', gql, z.array(TradeTransaction));
+  if (trades.length >= 200) throw new Error('A consulta atingiu o limite de 200 propostas; inbox pode estar incompleto.');
+  return trades.filter(t => isIncomingTrade(t, leagueId, rosterId, userId));
 }

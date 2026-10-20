@@ -124,6 +124,16 @@ As sugestões exigem equilíbrio de valor para os dois lados (diferença máxima
 
 Configure `LEAGUE_IDS=1389707052531601408,OUTRO_ID` no `.env`. Sem essa variável, `LEAGUE_ID` continua funcionando. `LEAGUE_IDS=auto` acompanha todas as ligas NFL da temporada atual do usuário. O `setup` permite selecionar várias ligas por número, separadas por vírgula.
 
-Os comandos `lineup`, `waivers`, `claims`, `trades`, `injuries` e os mesmos comandos no Telegram processam todas as ligas configuradas. Os timers existentes também passam a acompanhar todas elas, com mensagens identificadas pelo nome da liga e deduplicação independente. Cada liga usa sua própria pontuação, roster, FAAB e waivers. Uma falha em uma liga não interrompe as demais.
+Os comandos `lineup`, `waivers`, `claims`, `trades`, `inbox`, `injuries` e os mesmos comandos no Telegram processam todas as ligas configuradas. Os timers existentes também passam a acompanhar todas elas, com mensagens identificadas pelo nome da liga e deduplicação independente. Cada liga usa sua própria pontuação, roster, FAAB e waivers. Uma falha em uma liga não interrompe as demais.
 
 Para analisar uma liga específica no terminal: `pnpm cli lineup --league-id ID` (a opção também existe nos outros comandos de análise e no `sync`). Depois de mudar a configuração, reinicie o bot com `systemctl --user restart sleeper-trader-bot.service`. Aplique `pnpm migrate up` antes de usar o acompanhamento de lesões por liga.
+
+### Inbox de trades
+
+`pnpm cli inbox` ou `/inbox` no Telegram consulta propostas recebidas ainda em status `proposed`, envolvendo seu roster e sem o seu aceite. Exige `SLEEPER_TOKEN`. Para uma liga específica, use `--league-id ID`; `--notify` envia o relatório ao Telegram.
+
+O relatório mostra jogadores, picks e FAAB enviados/recebidos, impacto no lineup desta semana e do restante da temporada, valor posicional dos jogadores e ganho dos parceiros. Pode sugerir uma alternativa com o mesmo parceiro e algum dos jogadores desejados. Nenhuma operação de aceite, rejeição ou envio é executada.
+
+Picks e FAAB são exibidos separadamente, sem conversão inventada para pontos. Propostas com esses ativos, jogadores sem projeção, vagas excedentes ou IR/taxi exigem revisão manual. Na dynasty, o relatório também sinaliza que o modelo atual considera idade e o restante desta temporada, não o valor completo de carreiras futuras.
+
+O timer `sleeper-trader-inbox.timer` verifica as duas ligas a cada 15 minutos, usando `inbox --notify --new-only`. Só propostas novas ou alteradas geram alertas; inbox vazio fica silencioso e mudanças nas projeções não reenviam a mesma oferta. A deduplicação fica no outbox do Postgres e sobrevive a reinicializações. O instalador `deploy/install-systemd.sh` inclui esse timer.

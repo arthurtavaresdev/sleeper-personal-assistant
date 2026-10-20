@@ -92,3 +92,24 @@ export const Transaction = z
   })
   .passthrough();
 export type Transaction = z.infer<typeof Transaction>;
+
+/** Ativos de uma proposta: owner_id é o destino; previous_owner_id é a origem. */
+export const TradePick = z.object({
+  season: z.union([z.string(), z.number()]).transform(String),
+  round: z.number().int().positive(),
+  roster_id: z.number().int(),
+  owner_id: z.number().int(),
+  previous_owner_id: z.number().int(),
+}).passthrough();
+export const TradeBudget = z.object({
+  sender: z.number().int(), receiver: z.number().int(), amount: z.number().nonnegative(),
+}).passthrough();
+export const TradeTransaction = Transaction.extend({
+  type: z.literal('trade'),
+  league_id: z.string(),
+  creator: z.string(),
+  consenter_ids: z.array(z.number().int()),
+  draft_picks: z.array(TradePick).nullish(),
+  waiver_budget: z.array(TradeBudget).nullish(),
+});
+export type TradeTransaction = z.infer<typeof TradeTransaction>;

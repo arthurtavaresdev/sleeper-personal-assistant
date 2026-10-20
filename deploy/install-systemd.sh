@@ -11,7 +11,7 @@ done
 systemctl --user daemon-reload
 systemctl --user enable --now sleeper-trader-bot.service \
   sleeper-trader-waivers.timer sleeper-trader-trades.timer \
-  sleeper-trader-lineup.timer sleeper-trader-injuries.timer
+  sleeper-trader-lineup.timer sleeper-trader-injuries.timer sleeper-trader-inbox.timer
 # Mantém o container do Postgres e os timers rodando sem sessão aberta e após reboot
 systemctl --user enable podman-restart.service
 loginctl enable-linger "$USER"
