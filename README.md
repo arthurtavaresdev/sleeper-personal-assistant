@@ -38,14 +38,18 @@ descoberto sozinho e uma mensagem de teste é enviada.
 ```bash
 pnpm cli lineup [--week N] [--notify]
 pnpm cli waivers [--notify]
+pnpm cli claims [--notify]         # avalia seus lances de waiver pendentes
 pnpm cli trades [--team <nome>] [--notify]
+pnpm cli inbox [--league-id ID] [--notify]  # propostas de trade recebidas
 pnpm cli injuries [--notify]
 pnpm cli backtest --weeks 2-6     # erro do modelo vs baseline (média da temporada)
 pnpm cli bot                      # daemon: envia mensagens e responde comandos
 ```
 
 Sem `--notify` o resultado só aparece no terminal. No Telegram, o bot responde a `/lineup`, `/waivers`,
-`/trades [time]` e `/injuries`, mas só no chat configurado.
+`/claims`, `/trades [time]`, `/inbox` e `/injuries`, mas só no chat configurado.
+Os comandos analisam todas as ligas configuradas; use `--league-id ID` no terminal para selecionar uma.
+`claims` e `inbox` exigem `SLEEPER_TOKEN` configurado.
 
 ## Agendamento (systemd)
 
