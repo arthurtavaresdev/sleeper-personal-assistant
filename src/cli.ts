@@ -40,9 +40,10 @@ program
 program
   .command('sync')
   .description('baixa dados do Sleeper e do nflverse e recalcula features')
+  .option('-l, --league-id <id>', 'sincroniza somente esta liga')
   .option('-f, --force', 'ignora o cache')
   .action(async (o) => {
-    const r = await runSync({ force: o.force });
+    const r = await runSync({ force: o.force, leagueId: o.leagueId });
     console.log(`Sincronizado: temporada ${r.season}, semana ${r.week}`);
   });
 
@@ -52,6 +53,7 @@ program
   .command('lineup')
   .description('melhor lineup da semana')
   .option('-w, --week <n>', 'semana', week)
+  .option('-l, --league-id <id>', 'analisa somente esta liga')
   .option('-n, --notify', 'envia no Telegram')
   .action(async (o) => print(await runLineupJob(o)));
 
@@ -59,12 +61,14 @@ program
   .command('waivers')
   .description('free agents que melhoram o time')
   .option('-w, --week <n>', 'semana', week)
+  .option('-l, --league-id <id>', 'analisa somente esta liga')
   .option('-n, --notify', 'envia no Telegram')
   .action(async (o) => print(await runWaiversJob(o)));
 
 program
   .command('claims')
   .description('avalia suas propostas de waiver pendentes (requer SLEEPER_TOKEN)')
+  .option('-l, --league-id <id>', 'analisa somente esta liga')
   .option('-n, --notify', 'envia no Telegram')
   .action(async (o) => print(await runClaimsJob(o)));
 
@@ -73,12 +77,14 @@ program
   .description('ideias de troca boas para os dois lados')
   .option('-w, --week <n>', 'semana', week)
   .option('-t, --team <name>', 'só com este time (parte do nome)')
+  .option('-l, --league-id <id>', 'analisa somente esta liga')
   .option('-n, --notify', 'envia no Telegram')
   .action(async (o) => print(await runTradesJob({ ...o, partner: o.team })));
 
 program
   .command('injuries')
   .description('alerta mudanças de status de lesão no seu time')
+  .option('-l, --league-id <id>', 'analisa somente esta liga')
   .option('-n, --notify', 'envia no Telegram')
   .action(async (o) => print(await runInjuriesJob(o)));
 

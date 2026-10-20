@@ -6,6 +6,7 @@ import { runClaimsJob, runInjuriesJob, runLineupJob, runTradesJob, runWaiversJob
 
 const HELP = [
   '<b>Sleeper Trader</b>',
+  'Os comandos analisam todas as ligas configuradas.',
   '/lineup — melhor lineup da semana',
   '/waivers — oportunidades de waiver',
   '/claims — vale cobrir suas propostas pendentes?',

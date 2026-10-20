@@ -119,3 +119,11 @@ pnpm typecheck
 O valor de negociação usa o excedente projetado no restante da temporada sobre o melhor free agent da posição, ponderado pela preferência de mercado da liga: **RB > WR > TE > QB > K > DEF**. Os fatores heurísticos são, respectivamente, 1,25 / 1,10 / 1,00 / 0,80 / 0,50 / 0,40. Eles não alteram pontos projetados. Assim, um QB com muitos pontos pode ter pouco valor de troca quando há substitutos próximos nos waivers. O desconto de QB não se aplica em 2QB ou superflex.
 
 As sugestões exigem equilíbrio de valor para os dois lados (diferença máxima de 20%), além do ganho de lineup. K e DEF continuam fora das sugestões automáticas. Em dynasty, aplica-se também a curva de idade. Esses fatores representam uma preferência da liga, não preços medidos de mercado.
+
+### Acompanhar várias ligas
+
+Configure `LEAGUE_IDS=1389707052531601408,OUTRO_ID` no `.env`. Sem essa variável, `LEAGUE_ID` continua funcionando. `LEAGUE_IDS=auto` acompanha todas as ligas NFL da temporada atual do usuário. O `setup` permite selecionar várias ligas por número, separadas por vírgula.
+
+Os comandos `lineup`, `waivers`, `claims`, `trades`, `injuries` e os mesmos comandos no Telegram processam todas as ligas configuradas. Os timers existentes também passam a acompanhar todas elas, com mensagens identificadas pelo nome da liga e deduplicação independente. Cada liga usa sua própria pontuação, roster, FAAB e waivers. Uma falha em uma liga não interrompe as demais.
+
+Para analisar uma liga específica no terminal: `pnpm cli lineup --league-id ID` (a opção também existe nos outros comandos de análise e no `sync`). Depois de mudar a configuração, reinicie o bot com `systemctl --user restart sleeper-trader-bot.service`. Aplique `pnpm migrate up` antes de usar o acompanhamento de lesões por liga.

@@ -29,11 +29,13 @@ export async function runSetup(opts: { username?: string; league?: string }): Pr
     let leagueId = opts.league;
     if (!leagueId) {
       leagues.forEach((l, i) => console.log(`  [${i + 1}] ${l.name} (${l.total_rosters} times, ${l.league_id})`));
-      const pick = leagues.length === 1 ? 1 : Number(await rl.question('Escolha a liga: '));
-      leagueId = leagues[pick - 1]?.league_id;
+      const picks = leagues.length === 1 ? '1' : await rl.question('Escolha as ligas (ex.: 1,2): ');
+      const chosen = picks.split(',').map(x => leagues[Number(x.trim()) - 1]?.league_id);
+      if (chosen.some(id => !id)) throw new Error('Opção inválida');
+      leagueId = [...new Set(chosen)].join(',');
       if (!leagueId) throw new Error('Opção inválida');
     }
-    await setEnvVars({ SLEEPER_USERNAME: username, LEAGUE_ID: leagueId });
+    await setEnvVars({ SLEEPER_USERNAME: username, LEAGUE_ID: leagueId.split(',')[0]!, LEAGUE_IDS: leagueId });
     console.log(`✔ Liga configurada: ${leagues.find((l) => l.league_id === leagueId)?.name ?? leagueId}`);
 
     const token = config.TELEGRAM_BOT_TOKEN || (await rl.question('Token do bot do Telegram (@BotFather, Enter para pular): ')).trim();

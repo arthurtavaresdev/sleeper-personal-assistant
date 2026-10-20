@@ -23,8 +23,8 @@ export async function findMyRoster(rosters: TeamRoster[]): Promise<TeamRoster> {
   return mine;
 }
 
-export async function loadContext(season: number, week: number, opts: { ros?: boolean } = {}): Promise<AnalysisContext> {
-  const league = await loadLeague(requireLeagueId());
+export async function loadContext(season: number, week: number, opts: { ros?: boolean; leagueId?: string } = {}): Promise<AnalysisContext> {
+  const league = await loadLeague(opts.leagueId ?? requireLeagueId());
   const rosters = await loadRosters(league.id);
   const mine = await findMyRoster(rosters);
   const weekProj = await projectWeek(league, season, week);

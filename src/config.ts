@@ -5,6 +5,7 @@ const schema = z.object({
   DATABASE_URL: z.string().url(),
   SLEEPER_USERNAME: z.string().optional().default(''),
   LEAGUE_ID: z.string().optional().default(''),
+  LEAGUE_IDS: z.string().default(''),
   /** Token da sessão web do Sleeper (opcional): só para ler as SUAS propostas de waiver pendentes. */
   SLEEPER_TOKEN: z.string().optional().default(''),
   TELEGRAM_BOT_TOKEN: z.string().optional().default(''),
