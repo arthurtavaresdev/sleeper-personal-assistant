@@ -155,8 +155,9 @@ export async function syncNflverse(seasons: number[], force = false): Promise<bo
       `${RELEASES}/snap_counts/snap_counts_${season}.csv`, 'raw.nfl_snaps', upsertSnaps, ttl)) || changed;
   }
   const minSeason = Math.min(...seasons);
+  // TTL curto: as linhas de Vegas mudam ao longo da semana
   changed = (await loadSource('nflverse:games', `${RELEASES}/schedules/games.csv`, 'raw.nfl_games',
-    () => upsertGames(minSeason), { ttlHours: 6, force })) || changed;
+    () => upsertGames(minSeason), { ttlHours: 1, force })) || changed;
   changed = (await loadSource('dynastyprocess:ids', IDS_URL, 'raw.dp_ids', upsertIdMap,
     { ttlHours: 72, force, nullToken: 'NA' })) || changed;
   await fillIdMapFallbacks();
