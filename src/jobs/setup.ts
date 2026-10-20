@@ -56,7 +56,7 @@ export async function runSetup(opts: { username?: string; league?: string }): Pr
       chatId = String(chat.id);
       await setEnvVars({ TELEGRAM_CHAT_ID: chatId });
     }
-    await sendMessage('✅ <b>Sleeper Trader</b> conectado! Você vai receber lineup, waivers e trocas por aqui.', chatId);
+    await sendMessage('✅ <b>Sleeper Personal Assistant</b> conectado! Você vai receber lineup, waivers e trocas por aqui.', chatId);
     console.log(`✔ Mensagem de teste enviada (chat ${chatId})`);
   } finally {
     rl.close();

@@ -1,5 +1,5 @@
 [Unit]
-Description=Sleeper Trader: %i
+Description=Sleeper Personal Assistant: %i
 After=network-online.target
 Wants=network-online.target
 

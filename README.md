@@ -1,4 +1,4 @@
-# Sleeper Trader
+# Sleeper Personal Assistant
 
 Assistente pessoal para ligas de NFL no [Sleeper](https://sleeper.com): lê as configurações da sua liga,
 gera **projeções próprias** a partir de dados públicos do [nflverse](https://github.com/nflverse/nflverse-data)

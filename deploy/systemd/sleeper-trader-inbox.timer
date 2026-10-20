@@ -1,5 +1,5 @@
 [Unit]
-Description=Sleeper Trader: verificar novas propostas de trade a cada 15 minutos
+Description=Sleeper Personal Assistant: verificar novas propostas de trade a cada 15 minutos
 
 [Timer]
 OnCalendar=*-*-* *:00/15:00 America/Sao_Paulo

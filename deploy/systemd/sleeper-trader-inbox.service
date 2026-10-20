@@ -1,5 +1,5 @@
 [Unit]
-Description=Sleeper Trader: propostas de trade recebidas
+Description=Sleeper Personal Assistant: propostas de trade recebidas
 After=network-online.target
 Wants=network-online.target
 

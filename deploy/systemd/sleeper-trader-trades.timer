@@ -1,5 +1,5 @@
 [Unit]
-Description=Sleeper Trader: ideias de troca
+Description=Sleeper Personal Assistant: ideias de troca
 
 [Timer]
 OnCalendar=Wed *-*-* 12:00:00 America/Sao_Paulo

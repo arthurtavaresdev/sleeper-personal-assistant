@@ -1,5 +1,5 @@
 [Unit]
-Description=Sleeper Trader: lineup (antes do TNF e no domingo antes do primeiro jogo)
+Description=Sleeper Personal Assistant: lineup (antes do TNF e no domingo antes do primeiro jogo)
 
 [Timer]
 OnCalendar=Thu *-*-* 15:00:00 America/Sao_Paulo

@@ -2,7 +2,7 @@
 
 ## Projeto e comunicação
 
-Sleeper Trader é um assistente pessoal de fantasy NFL em TypeScript/Node, com CLI, PostgreSQL e bot do Telegram. Responda ao usuário em português e mantenha mensagens do produto em português. Consulte o README e o código antes de alterar comportamentos. Faça commits ao concluir etapas coerentes; não faça push sem solicitação. Preserve alterações existentes do usuário.
+Sleeper Personal Assistant é um assistente pessoal de fantasy NFL em TypeScript/Node, com CLI, PostgreSQL e bot do Telegram. Responda ao usuário em português e mantenha mensagens do produto em português. Consulte o README e o código antes de alterar comportamentos. Faça commits ao concluir etapas coerentes; não faça push sem solicitação. Preserve alterações existentes do usuário.
 
 ## Stack e comandos
 

@@ -1,5 +1,5 @@
 [Unit]
-Description=Sleeper Trader: checagem de lesões dos meus jogadores
+Description=Sleeper Personal Assistant: checagem de lesões dos meus jogadores
 
 [Timer]
 OnCalendar=Thu..Sun *-*-* 08..22/2:00:00 America/Sao_Paulo

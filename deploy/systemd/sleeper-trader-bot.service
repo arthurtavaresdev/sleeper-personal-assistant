@@ -1,5 +1,5 @@
 [Unit]
-Description=Sleeper Trader: bot do Telegram (outbox + comandos)
+Description=Sleeper Personal Assistant: bot do Telegram (outbox + comandos)
 After=network-online.target
 Wants=network-online.target
 

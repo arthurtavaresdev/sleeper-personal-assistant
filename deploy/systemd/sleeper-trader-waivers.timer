@@ -1,5 +1,5 @@
 [Unit]
-Description=Sleeper Trader: relatório de waivers (antes do processamento de quarta)
+Description=Sleeper Personal Assistant: relatório de waivers (antes do processamento de quarta)
 
 [Timer]
 OnCalendar=Tue *-*-* 10:00:00 America/Sao_Paulo

@@ -7,7 +7,7 @@ import { escapeHtml, getUpdates, sendMessage } from '../notify/telegram.js';
 import { runInboxJob, runClaimsJob, runInjuriesJob, runLineupJob, runTradesJob, runWaiversJob, type JobOptions, type JobResult } from './analysis.js';
 
 const HELP = [
-  '<b>Sleeper Trader</b>',
+  '<b>Sleeper Personal Assistant</b>',
   'Os comandos analisam todas as ligas configuradas.',
   '/lineup — melhor lineup da semana',
   '/waivers — oportunidades de waiver',
