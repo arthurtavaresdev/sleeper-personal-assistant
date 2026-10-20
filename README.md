@@ -68,7 +68,7 @@ Instala units de usuário apontando para este diretório e para o Node atual (fu
 | injuries | quinta a domingo, a cada 2h entre 08:00 e 22:00 |
 
 `Persistent=true` executa na próxima inicialização o que foi perdido com o PC desligado.
-Acompanhe com `systemctl --user list-timers 'sleeper-trader-*'` e `journalctl --user -u 'sleeper-trader*'`.
+Acompanhe com `systemctl --user list-timers 'sleeper-personal-assistant-*'` e `journalctl --user -u 'sleeper-personal-assistant*'`.
 
 ## Como funciona
 
@@ -130,7 +130,7 @@ Configure `LEAGUE_IDS=1389707052531601408,OUTRO_ID` no `.env`. Sem essa variáve
 
 Os comandos `lineup`, `waivers`, `claims`, `trades`, `inbox`, `injuries` e os mesmos comandos no Telegram processam todas as ligas configuradas. Os timers existentes também passam a acompanhar todas elas, com mensagens identificadas pelo nome da liga e deduplicação independente. Cada liga usa sua própria pontuação, roster, FAAB e waivers. Uma falha em uma liga não interrompe as demais.
 
-Para analisar uma liga específica no terminal: `pnpm cli lineup --league-id ID` (a opção também existe nos outros comandos de análise e no `sync`). Depois de mudar a configuração, reinicie o bot com `systemctl --user restart sleeper-trader-bot.service`. Aplique `pnpm migrate up` antes de usar o acompanhamento de lesões por liga.
+Para analisar uma liga específica no terminal: `pnpm cli lineup --league-id ID` (a opção também existe nos outros comandos de análise e no `sync`). Depois de mudar a configuração, reinicie o bot com `systemctl --user restart sleeper-personal-assistant-bot.service`. Aplique `pnpm migrate up` antes de usar o acompanhamento de lesões por liga.
 
 ### Inbox de trades
 
@@ -140,4 +140,10 @@ O relatório mostra jogadores, picks e FAAB enviados/recebidos, impacto no lineu
 
 Picks e FAAB são exibidos separadamente, sem conversão inventada para pontos. Propostas com esses ativos, jogadores sem projeção, vagas excedentes ou IR/taxi exigem revisão manual. Na dynasty, o relatório também sinaliza que o modelo atual considera idade e o restante desta temporada, não o valor completo de carreiras futuras.
 
-O timer `sleeper-trader-inbox.timer` verifica as duas ligas a cada 15 minutos, usando `inbox --notify --new-only`. Só propostas novas ou alteradas geram alertas; inbox vazio fica silencioso e mudanças nas projeções não reenviam a mesma oferta. A deduplicação fica no outbox do Postgres e sobrevive a reinicializações. O instalador `deploy/install-systemd.sh` inclui esse timer.
+O timer `sleeper-personal-assistant-inbox.timer` verifica as duas ligas a cada 15 minutos, usando `inbox --notify --new-only`. Só propostas novas ou alteradas geram alertas; inbox vazio fica silencioso e mudanças nas projeções não reenviam a mesma oferta. A deduplicação fica no outbox do Postgres e sobrevive a reinicializações. O instalador `deploy/install-systemd.sh` inclui esse timer.
+
+### Renomeação do projeto
+
+O pacote, CLI e serviços usam `sleeper-personal-assistant`. Ao reinstalar com `deploy/install-systemd.sh`, as units antigas `sleeper-trader-*` são paradas/desabilitadas antes da ativação das novas, evitando dois bots ou timers duplicados. O instalador grava o caminho absoluto do checkout atual; execute-o novamente se mover a pasta ou trocar a versão do Node.
+
+O container é `sleeper-personal-assistant-db`. O volume persistente permanece **`deploy_pgdata`**, explicitamente fixado no Compose para reutilizar o banco existente. Em uma instalação antiga, renomeie o container existente com `podman rename sleeper-trader-db sleeper-personal-assistant-db`; não remova o volume para renomear o projeto.

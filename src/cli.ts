@@ -28,7 +28,7 @@ function parseWeeks(spec: string): number[] {
 
 const print = (r: JobResult) => console.log(toTerminal(r.text));
 
-const program = new Command('sleeper-trader').description('Assistente de fantasy football para ligas do Sleeper');
+const program = new Command('sleeper-personal-assistant').description('Assistente de fantasy football para ligas do Sleeper');
 
 program
   .command('setup')

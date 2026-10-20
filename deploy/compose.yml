@@ -1,7 +1,7 @@
 services:
   db:
     image: docker.io/library/postgres:17
-    container_name: sleeper-trader-db
+    container_name: sleeper-personal-assistant-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: sleeper
@@ -15,3 +15,5 @@ services:
       - ./initdb:/docker-entrypoint-initdb.d:ro,Z
 volumes:
   pgdata:
+    # Nome persistente do volume já existente; não vincular ao nome do projeto.
+    name: deploy_pgdata

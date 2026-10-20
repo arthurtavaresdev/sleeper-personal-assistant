@@ -62,6 +62,6 @@ Sleeper Personal Assistant é um assistente pessoal de fantasy NFL em TypeScript
 - Envie confirmação de conexão no início e após recuperação de falha, uma vez por transição; não a cada poll bem-sucedido.
 - Preserve outbox, deduplicação e locks de envio. Escape dados externos em HTML e respeite limites de mensagem do Telegram.
 - Operação usa `America/Sao_Paulo`; considere jogos internacionais e kickoff ao ajustar horários.
-- Após mudanças de código/configuração do daemon, reinicie `systemctl --user restart sleeper-trader-bot.service` quando fizer parte da tarefa autorizada. A reinicialização envia uma confirmação ao usuário.
-- Diagnóstico: `systemctl --user status sleeper-trader-bot.service`, `journalctl --user -u sleeper-trader-bot.service` e `systemctl --user list-timers 'sleeper-trader-*'`.
+- Após mudanças de código/configuração do daemon, reinicie `systemctl --user restart sleeper-personal-assistant-bot.service` quando fizer parte da tarefa autorizada. A reinicialização envia uma confirmação ao usuário.
+- Diagnóstico: `systemctl --user status sleeper-personal-assistant-bot.service`, `journalctl --user -u sleeper-personal-assistant-bot.service` e `systemctl --user list-timers 'sleeper-personal-assistant-*'`.
 - Diferencie validação unitária de execução real. Não afirme que mensagens foram entregues ou ligas sincronizadas sem evidência da execução correspondente.

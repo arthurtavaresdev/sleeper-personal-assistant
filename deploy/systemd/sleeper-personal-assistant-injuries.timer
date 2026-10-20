@@ -4,7 +4,7 @@ Description=Sleeper Personal Assistant: checagem de lesões dos meus jogadores
 [Timer]
 OnCalendar=Thu..Sun *-*-* 08..22/2:00:00 America/Sao_Paulo
 Persistent=true
-Unit=sleeper-trader@injuries.service
+Unit=sleeper-personal-assistant@injuries.service
 
 [Install]
 WantedBy=timers.target

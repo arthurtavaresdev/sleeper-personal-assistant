@@ -4,7 +4,7 @@ Description=Sleeper Personal Assistant: ideias de troca
 [Timer]
 OnCalendar=Wed *-*-* 12:00:00 America/Sao_Paulo
 Persistent=true
-Unit=sleeper-trader@trades.service
+Unit=sleeper-personal-assistant@trades.service
 
 [Install]
 WantedBy=timers.target

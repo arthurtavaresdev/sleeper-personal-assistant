@@ -7,13 +7,13 @@ describe('connection notifications', () => {
     await connection.connected();
     await connection.connected();
     expect(send).toHaveBeenCalledTimes(1);
-    expect(send.mock.calls[0]![0]).toContain('conectado.');
+    expect(send.mock.calls[0]![0]).toContain('Sleeper Personal Assistant conectado.');
     connection.disconnected();
     connection.disconnected();
     await connection.connected();
     await connection.connected();
     expect(send).toHaveBeenCalledTimes(2);
-    expect(send.mock.calls[1]![0]).toContain('reconectado.');
+    expect(send.mock.calls[1]![0]).toContain('Sleeper Personal Assistant conectado.');
     expect(connection.pending).toBe(false);
   });
   it('retries the confirmation if sending fails', async () => {

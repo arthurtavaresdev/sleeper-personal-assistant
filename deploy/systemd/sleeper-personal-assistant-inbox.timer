@@ -4,7 +4,7 @@ Description=Sleeper Personal Assistant: verificar novas propostas de trade a cad
 [Timer]
 OnCalendar=*-*-* *:00/15:00 America/Sao_Paulo
 Persistent=true
-Unit=sleeper-trader-inbox.service
+Unit=sleeper-personal-assistant-inbox.service
 
 [Install]
 WantedBy=timers.target
