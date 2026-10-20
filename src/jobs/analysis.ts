@@ -1,3 +1,4 @@
+import { analyzeClaims } from '../analysis/claims.js';
 import { loadContext } from '../analysis/context.js';
 import { analyzeLineup } from '../analysis/lineup.js';
 import { analyzeTrades, tradeWindowOpen } from '../analysis/trades.js';
@@ -6,7 +7,8 @@ import { sql, withJobLock } from '../db/index.js';
 import { syncPlayers } from '../data/sleeperSync.js';
 import { log } from '../log.js';
 import { activePlayers } from '../league/settings.js';
-import { formatInjuryAlert, formatLineup, formatTrades, formatWaivers } from '../notify/format.js';
+import { formatClaims, formatInjuryAlert, formatLineup, formatTrades, formatWaivers } from '../notify/format.js';
+import { graphqlConfigured } from '../sleeper/graphql.js';
 import { drainOutbox, enqueue } from '../notify/outbox.js';
 import { runSync } from './sync.js';
 
@@ -54,8 +56,32 @@ export function runWaiversJob(opts: JobOptions = {}): Promise<JobResult> {
     const { season, week } = await runSync();
     const ctx = await loadContext(season, opts.week ?? week, { ros: true });
     const moves = await analyzeWaivers(ctx);
-    const html = formatWaivers(moves, ctx.week, ctx.league.faab.enabled);
+    let html = formatWaivers(moves, ctx.week, ctx.league.faab.enabled);
+    // Com token, o relatório também avalia as propostas que você já fez
+    if (graphqlConfigured() && ctx.league.faab.enabled) {
+      try {
+        html += '\n\n' + formatClaims(await analyzeClaims(ctx), faabLeft(ctx), { header: false });
+      } catch (err) {
+        log.warn({ err }, 'não foi possível ler suas propostas pendentes');
+      }
+    }
     return deliver('waivers', `${season}-w${ctx.week}`, html, opts);
+  });
+}
+
+const faabLeft = (ctx: { league: { faab: { budget: number } }; mine: { faabUsed: number } }) =>
+  Math.max(0, ctx.league.faab.budget - ctx.mine.faabUsed);
+
+export function runClaimsJob(opts: JobOptions = {}): Promise<JobResult> {
+  return locked('claims', async () => {
+    if (!graphqlConfigured()) {
+      return { text: 'Configure SLEEPER_TOKEN no .env para ler suas propostas pendentes.', delivered: false };
+    }
+    const { season, week } = await runSync();
+    const ctx = await loadContext(season, opts.week ?? week, { ros: true });
+    if (!ctx.league.faab.enabled) return { text: 'A liga não usa FAAB.', delivered: false };
+    const html = formatClaims(await analyzeClaims(ctx), faabLeft(ctx));
+    return deliver('claims', `${season}-w${ctx.week}`, html, opts);
   });
 }
 

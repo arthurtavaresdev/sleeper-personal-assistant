@@ -36,6 +36,7 @@ export const League = z
         type: z.number().optional(), // 0 redraft, 1 keeper, 2 dynasty
         waiver_type: z.number().optional(), // 2 = FAAB
         waiver_budget: z.number().optional(),
+        waiver_bid_min: z.number().optional(),
         playoff_week_start: z.number().optional(),
         playoff_teams: z.number().optional(),
         trade_deadline: z.number().optional(),
@@ -76,3 +77,18 @@ export const Matchup = z
   .passthrough();
 
 export const Trending = z.array(z.object({ player_id: z.string(), count: z.number() }));
+
+export const Transaction = z
+  .object({
+    transaction_id: z.string(),
+    type: z.string(),
+    status: z.string(),
+    leg: z.number(),
+    roster_ids: z.array(z.number()),
+    adds: z.record(z.string(), z.number()).nullish(),
+    drops: z.record(z.string(), z.number()).nullish(),
+    settings: z.object({ waiver_bid: z.number().optional(), seq: z.number().optional() }).passthrough().nullish(),
+    metadata: z.object({ notes: z.string().optional() }).passthrough().nullish(),
+  })
+  .passthrough();
+export type Transaction = z.infer<typeof Transaction>;

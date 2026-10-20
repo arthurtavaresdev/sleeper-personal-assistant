@@ -36,7 +36,7 @@ export interface LeagueSettings {
   positions: string[];
   rosterSize: number;
   totalRosters: number;
-  faab: { enabled: boolean; budget: number };
+  faab: { enabled: boolean; budget: number; minBid: number };
   playoffWeekStart: number;
   tradeDeadline: number | null;
 }
@@ -63,7 +63,7 @@ export function parseLeague(league: League): LeagueSettings {
     positions,
     rosterSize: slots.filter((p) => p !== 'IR' && p !== 'TAXI').length,
     totalRosters: league.total_rosters,
-    faab: { enabled: s.waiver_type === 2, budget: s.waiver_budget ?? 100 },
+    faab: { enabled: s.waiver_type === 2, budget: s.waiver_budget ?? 100, minBid: s.waiver_bid_min ?? 0 },
     playoffWeekStart: s.playoff_week_start ?? 15,
     // Sleeper: trade_deadline é a última semana em que trocas são permitidas (99 = sem prazo)
     tradeDeadline: s.trade_deadline && s.trade_deadline < 99 ? s.trade_deadline : null,
@@ -85,6 +85,8 @@ export interface TeamRoster {
   reserve: string[];
   taxi: string[];
   faabUsed: number;
+  /** Prioridade de waiver (1 = primeira); desempata lances iguais de FAAB. */
+  waiverPosition: number;
 }
 
 export async function loadRosters(leagueId: string): Promise<TeamRoster[]> {
@@ -95,7 +97,7 @@ export async function loadRosters(leagueId: string): Promise<TeamRoster[]> {
     WHERE r.league_id = ${leagueId}
     ORDER BY r.roster_id`;
   return rows.map((r) => {
-    const d = r.data as { players?: string[]; starters?: string[]; reserve?: string[]; taxi?: string[]; settings?: { waiver_budget_used?: number } };
+    const d = r.data as { players?: string[]; starters?: string[]; reserve?: string[]; taxi?: string[]; settings?: { waiver_budget_used?: number; waiver_position?: number } };
     return {
       rosterId: r.roster_id as number,
       ownerId: r.owner_id as string | null,
@@ -105,6 +107,7 @@ export async function loadRosters(leagueId: string): Promise<TeamRoster[]> {
       reserve: d.reserve ?? [],
       taxi: d.taxi ?? [],
       faabUsed: d.settings?.waiver_budget_used ?? 0,
+      waiverPosition: d.settings?.waiver_position ?? 99,
     };
   });
 }

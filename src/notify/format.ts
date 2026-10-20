@@ -1,3 +1,4 @@
+import type { ClaimAction, ClaimVerdict } from '../analysis/claims.js';
 import type { LineupReport } from '../analysis/lineup.js';
 import type { TradeIdea } from '../analysis/trades.js';
 import type { WaiverMove } from '../analysis/waivers.js';
@@ -89,5 +90,33 @@ export function formatInjuryAlert(changes: { p: Projection; from: string | null 
     lines.push(`• ${e(p.name)} (${p.position}, ${p.team}): ${e(from ?? 'Saudável')} → <b>${e(p.injuryStatus ?? 'Saudável')}</b>`);
   }
   lines.push('', 'Rode /lineup para ver o lineup ajustado.');
+  return lines.join('\n');
+}
+
+const CLAIM_ACTION: Record<ClaimAction, string> = {
+  cancel: '🗑️ Cancelar — não melhora seu time',
+  raise: '⬆️ Subir o lance',
+  keep: '✅ Manter',
+  lower: '⬇️ Baixar o lance',
+  let_go: '🚫 Não vale cobrir',
+};
+
+export function formatClaims(verdicts: ClaimVerdict[], faabLeft: number, opts: { header?: boolean } = {}): string {
+  const lines = opts.header === false ? ['📝 <b>Suas propostas pendentes</b>'] : [`📝 <b>Suas propostas de waiver</b> · FAAB restante: $${faabLeft}`];
+  if (verdicts.length === 0) return [...lines, '', 'Nenhuma proposta pendente.'].join('\n');
+  for (const v of verdicts) {
+    const drop = v.drop ? ` ↔ largar ${e(v.drop.name)}` : '';
+    lines.push('', `${who(v.add)}${drop}`);
+    lines.push(`   Lance atual: $${v.currentBid} · seu teto: $${v.myCeiling} · ganho ${signed(v.rosGain)} pts ROS (${signed(v.weekGain)} nesta semana)`);
+    for (const r of v.rivals) {
+      const hist = r.profile.posMaxBid !== null ? ` · já deu até $${r.profile.posMaxBid} em ${v.add.position}` : r.profile.maxBid !== null ? ` · maior lance: $${r.profile.maxBid}` : ' · sem histórico';
+      lines.push(`   👀 ${e(r.roster.ownerName)}: ganho ${signed(r.gain)} · FAAB $${r.faabLeft}${hist} → deve dar ~$${r.predictedBid}`);
+    }
+    const sugg = v.action === 'cancel' ? '' : v.action === 'let_go'
+      ? ` (para vencer precisaria de ~$${v.neededBid}; deixe $${v.suggestedBid} só como aposta)`
+      : v.action === 'keep' ? ` ($${v.suggestedBid})` : `: <b>$${v.suggestedBid}</b>`;
+    lines.push(`   ${CLAIM_ACTION[v.action]}${sugg}`);
+  }
+  lines.push('', '<i>Lances dos outros são estimativas pelo roster e histórico de cada time.</i>');
   return lines.join('\n');
 }

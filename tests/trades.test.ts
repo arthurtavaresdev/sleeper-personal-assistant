@@ -20,7 +20,7 @@ function buildCtx(players: Projection[], rosters: Record<number, string[]>): Ana
   const ros = new Map<string, RosValue>(players.map((p) => [p.sleeperId,
     { total: p.mean * WEEKS.length, weeks: WEEKS.length, perWeek: new Map(WEEKS.map((w) => [w, p.mean])) }]));
   const teams: TeamRoster[] = Object.entries(rosters).map(([id, ps]) => ({
-    rosterId: Number(id), ownerId: `u${id}`, ownerName: `Time ${id}`, players: ps, starters: [], reserve: [], taxi: [], faabUsed: 0 }));
+    rosterId: Number(id), ownerId: `u${id}`, ownerName: `Time ${id}`, players: ps, starters: [], reserve: [], taxi: [], faabUsed: 0, waiverPosition: Number(id) }));
   return { league, season: 2026, week: 7, rosters: teams, mine: teams[0]!, rostered: new Set(teams.flatMap((t) => t.players)), weekProj, ros };
 }
 

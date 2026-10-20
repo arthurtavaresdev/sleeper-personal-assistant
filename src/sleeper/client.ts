@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { League, LeagueUser, Matchup, NflState, Roster, Trending, User } from './types.js';
+import { League, LeagueUser, Matchup, NflState, Roster, Transaction, Trending, User } from './types.js';
 
 const BASE = 'https://api.sleeper.app/v1';
 
@@ -26,6 +26,7 @@ export const sleeper = {
   rosters: (id: string) => get(`/league/${id}/rosters`, z.array(Roster)),
   users: (id: string) => get(`/league/${id}/users`, z.array(LeagueUser)),
   matchups: (id: string, week: number) => get(`/league/${id}/matchups/${week}`, z.array(Matchup)),
+  transactions: (id: string, leg: number) => get(`/league/${id}/transactions/${leg}`, z.array(Transaction)),
   trendingAdds: (hours = 48, limit = 50) =>
     get(`/players/nfl/trending/add?lookback_hours=${hours}&limit=${limit}`, Trending),
   /** ~15 MB; mantido cru (record id → objeto) e validado só o essencial. */

@@ -16,11 +16,13 @@ export async function syncPlayers(force = false): Promise<void> {
 
 /** Liga, times, rosters e matchups da semana — sempre ao vivo (são poucas requisições). */
 export async function syncLeague(leagueId: string, week: number): Promise<void> {
-  const [league, users, rosters, matchups] = await Promise.all([
+  const [league, users, rosters, matchups, transactions] = await Promise.all([
     sleeper.league(leagueId),
     sleeper.users(leagueId),
     sleeper.rosters(leagueId),
     sleeper.matchups(leagueId, week),
+    // Histórico completo: perfis de lance dependem de todas as semanas
+    Promise.all(Array.from({ length: week }, (_, i) => sleeper.transactions(leagueId, i + 1))).then((t) => t.flat()),
   ]);
   await sql.begin(async (tx) => {
     await tx`
@@ -38,6 +40,11 @@ export async function syncLeague(leagueId: string, week: number): Promise<void> 
       await tx`
         INSERT INTO core.matchups (league_id, week, roster_id, data) VALUES (${leagueId}, ${week}, ${m.roster_id}, ${tx.json(m as never)})
         ON CONFLICT (league_id, week, roster_id) DO UPDATE SET data = excluded.data`;
+    }
+    for (const t of transactions) {
+      await tx`
+        INSERT INTO core.transactions (league_id, transaction_id, data) VALUES (${leagueId}, ${t.transaction_id}, ${tx.json(t as never)})
+        ON CONFLICT (league_id, transaction_id) DO UPDATE SET data = excluded.data`;
     }
   });
   log.info({ league: league.name, rosters: rosters.length }, 'liga sincronizada');

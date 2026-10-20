@@ -3,7 +3,7 @@ import { sql } from './db/index.js';
 import { log } from './log.js';
 import { requireLeagueId } from './config.js';
 import { loadLeague } from './league/settings.js';
-import { runInjuriesJob, runLineupJob, runTradesJob, runWaiversJob, type JobResult } from './jobs/analysis.js';
+import { runClaimsJob, runInjuriesJob, runLineupJob, runTradesJob, runWaiversJob, type JobResult } from './jobs/analysis.js';
 import { runBacktest } from './jobs/backtest.js';
 import { runBot } from './jobs/bot.js';
 import { runSetup } from './jobs/setup.js';
@@ -61,6 +61,12 @@ program
   .option('-w, --week <n>', 'semana', week)
   .option('-n, --notify', 'envia no Telegram')
   .action(async (o) => print(await runWaiversJob(o)));
+
+program
+  .command('claims')
+  .description('avalia suas propostas de waiver pendentes (requer SLEEPER_TOKEN)')
+  .option('-n, --notify', 'envia no Telegram')
+  .action(async (o) => print(await runClaimsJob(o)));
 
 program
   .command('trades')

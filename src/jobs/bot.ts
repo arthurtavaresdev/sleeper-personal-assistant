@@ -2,12 +2,13 @@ import { config } from '../config.js';
 import { log } from '../log.js';
 import { listenOutbox } from '../notify/outbox.js';
 import { escapeHtml, getUpdates, sendMessage } from '../notify/telegram.js';
-import { runInjuriesJob, runLineupJob, runTradesJob, runWaiversJob, type JobOptions, type JobResult } from './analysis.js';
+import { runClaimsJob, runInjuriesJob, runLineupJob, runTradesJob, runWaiversJob, type JobOptions, type JobResult } from './analysis.js';
 
 const HELP = [
   '<b>Sleeper Trader</b>',
   '/lineup — melhor lineup da semana',
   '/waivers — oportunidades de waiver',
+  '/claims — vale cobrir suas propostas pendentes?',
   '/trades [time] — ideias de troca',
   '/injuries — status de lesão do seu time',
 ].join('\n');
@@ -15,6 +16,7 @@ const HELP = [
 const COMMANDS: Record<string, (args: string, opts: JobOptions) => Promise<JobResult>> = {
   '/lineup': (_, o) => runLineupJob(o),
   '/waivers': (_, o) => runWaiversJob(o),
+  '/claims': (_, o) => runClaimsJob(o),
   '/trades': (args, o) => runTradesJob({ ...o, partner: args || undefined }),
   '/injuries': (_, o) => runInjuriesJob(o),
 };
