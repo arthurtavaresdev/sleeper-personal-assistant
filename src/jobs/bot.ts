@@ -1,4 +1,5 @@
 import { config } from '../config.js';
+import { withJobLock } from '../db/index.js';
 import { log } from '../log.js';
 import { listenOutbox } from '../notify/outbox.js';
 import { escapeHtml, getUpdates, sendMessage } from '../notify/telegram.js';
@@ -26,7 +27,15 @@ const COMMANDS: Record<string, (args: string, opts: JobOptions) => Promise<JobRe
  * Daemon: envia o outbox assim que um job enfileira (LISTEN/NOTIFY) e responde
  * comandos via long polling. Só o chat configurado é atendido.
  */
-export async function runBot(): Promise<never> {
+export async function runBot(): Promise<void> {
+  if (!config.TELEGRAM_BOT_TOKEN || !config.TELEGRAM_CHAT_ID) {
+    throw new Error('Configure TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID com pnpm cli setup antes de iniciar o bot.');
+  }
+  const result = await withJobLock('telegram-bot', pollBot);
+  if (result === null) throw new Error('Outra instância do bot já está rodando. Use somente o serviço systemd.');
+}
+
+async function pollBot(): Promise<never> {
   await listenOutbox();
   let offset: number | undefined;
   log.info('bot do Telegram aguardando comandos');

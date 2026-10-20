@@ -8,8 +8,8 @@ const schema = z.object({
   LEAGUE_IDS: z.string().default(''),
   /** Token da sessão web do Sleeper (opcional): só para ler as SUAS propostas de waiver pendentes. */
   SLEEPER_TOKEN: z.string().optional().default(''),
-  TELEGRAM_BOT_TOKEN: z.string().optional().default(''),
-  TELEGRAM_CHAT_ID: z.string().optional().default(''),
+  TELEGRAM_BOT_TOKEN: z.string().trim().optional().default(''),
+  TELEGRAM_CHAT_ID: z.string().trim().optional().default(''),
   TZ: z.string().default('America/Sao_Paulo'),
   LOG_LEVEL: z.string().default('info'),
 });
