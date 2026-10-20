@@ -76,7 +76,7 @@ export function formatTrades(ideas: TradeIdea[], week: number): string {
       `${i + 1}. Com <b>${e(t.partner.ownerName)}</b>`,
       `   📤 Dou: ${names(t.give)}`,
       `   📥 Recebo: ${names(t.get)}`,
-      `   Meu time: ${signed(t.myGain)} pts · Time dele: ${signed(t.theirGain)} pts (resto da temporada)`,
+      `   Meu time: ${signed(t.myGain)} pts · Parceiro: ${signed(t.theirGain)} pts (resto da temporada)`,
     );
   });
   lines.push('', '<i>Ganhos medidos no lineup ótimo de cada time, semana a semana.</i>');
