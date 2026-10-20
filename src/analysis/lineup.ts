@@ -1,4 +1,5 @@
 import { sql } from '../db/index.js';
+import { SLOT_ELIGIBILITY } from '../league/settings.js';
 import type { Projection } from '../model/projection.js';
 import { optimizeWithLocks, type LineupResult } from '../optimizer/lineup.js';
 import { activePlayers, type AnalysisContext } from './context.js';
@@ -77,5 +78,4 @@ export async function analyzeLineup(ctx: AnalysisContext): Promise<LineupReport>
   return { week: ctx.week, optimal, currentTotal, changes, alerts, closeCalls, locked: new Set(projections.filter((p) => isLocked(p.sleeperId)).map((p) => p.sleeperId)) };
 }
 
-import { SLOT_ELIGIBILITY } from '../league/settings.js';
 const slotAccepts = (slot: string, pos: string) => SLOT_ELIGIBILITY[slot]?.includes(pos) ?? false;

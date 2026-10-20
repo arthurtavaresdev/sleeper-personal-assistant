@@ -11,6 +11,7 @@ export interface Projection {
   position: string;
   fantasyPositions: string[];
   team: string;
+  age: number | null;
   opponent: string | null;
   injuryStatus: string | null;
   mean: number;
@@ -289,6 +290,7 @@ function finalize(p: PlayerInput, opponent: string | null, stats: StatLine, scor
     position: p.position,
     fantasyPositions: p.fantasyPositions,
     team: p.team,
+    age: p.age,
     opponent,
     injuryStatus: p.injuryStatus,
     mean,

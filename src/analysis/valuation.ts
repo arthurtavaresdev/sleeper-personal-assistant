@@ -13,24 +13,34 @@ const WEEK_DISCOUNT = 0.97;
 export class RosterValuer {
   private readonly weeks: number[];
   private readonly byWeek: Map<number, Map<string, Candidate>>;
+  private readonly league: LeagueSettings;
 
-  constructor(
-    private readonly league: LeagueSettings,
-    proj: Map<string, Projection>,
-    ros: Map<string, RosValue>,
-  ) {
-    const anyRos = ros.values().next().value as RosValue | undefined;
-    this.weeks = anyRos ? [...anyRos.perWeek.keys()].sort((a, b) => a - b) : [];
+  private constructor(league: LeagueSettings, proj: Map<string, Projection>, values: Map<string, Map<number, number>>, weeks: number[]) {
+    this.league = league;
+    this.weeks = weeks;
     this.byWeek = new Map();
-    for (const w of this.weeks) {
+    for (const w of weeks) {
       const m = new Map<string, Candidate>();
-      for (const [id, r] of ros) {
+      for (const [id, perWeek] of values) {
         const p = proj.get(id);
-        if (!p) continue;
-        m.set(id, { id, positions: eligiblePositions(p, league), value: r.perWeek.get(w) ?? 0 });
+        if (p) m.set(id, { id, positions: eligiblePositions(p, league), value: perWeek.get(w) ?? 0 });
       }
       this.byWeek.set(w, m);
     }
+  }
+
+  /** Restante da temporada, semana a semana. */
+  static restOfSeason(league: LeagueSettings, proj: Map<string, Projection>, ros: Map<string, RosValue>): RosterValuer {
+    const values = new Map([...ros].map(([id, r]) => [id, r.perWeek]));
+    const first = ros.values().next().value as RosValue | undefined;
+    const weeks = first ? [...first.perWeek.keys()].sort((a, b) => a - b) : [];
+    return new RosterValuer(league, proj, values, weeks);
+  }
+
+  /** Só a semana projetada em `proj`. */
+  static singleWeek(league: LeagueSettings, proj: Map<string, Projection>, week: number): RosterValuer {
+    const values = new Map([...proj].map(([id, p]) => [id, new Map([[week, p.mean]])]));
+    return new RosterValuer(league, proj, values, [week]);
   }
 
   get remainingWeeks(): number {
