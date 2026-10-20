@@ -1,6 +1,7 @@
 import { config } from '../config.js';
 import { withJobLock } from '../db/index.js';
 import { log } from '../log.js';
+import { connectionNotifier } from '../notify/connection.js';
 import { listenOutbox } from '../notify/outbox.js';
 import { escapeHtml, getUpdates, sendMessage } from '../notify/telegram.js';
 import { runClaimsJob, runInjuriesJob, runLineupJob, runTradesJob, runWaiversJob, type JobOptions, type JobResult } from './analysis.js';
@@ -38,12 +39,15 @@ export async function runBot(): Promise<void> {
 async function pollBot(): Promise<never> {
   await listenOutbox();
   let offset: number | undefined;
+  const connection = connectionNotifier(sendMessage);
   log.info('bot do Telegram aguardando comandos');
   for (;;) {
     let updates;
     try {
-      updates = await getUpdates(offset, 50);
+      updates = await getUpdates(offset, connection.pending ? 0 : 50);
+      await connection.connected();
     } catch (err) {
+      connection.disconnected();
       log.error({ err }, 'falha no long polling; tentando de novo em 10s');
       await new Promise((r) => setTimeout(r, 10_000));
       continue;
