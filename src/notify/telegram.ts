@@ -11,8 +11,18 @@ interface TgResponse<T> {
 
 export interface TgUpdate {
   update_id: number;
-  message?: { message_id: number; chat: { id: number; type: string; first_name?: string; username?: string }; text?: string };
+  message?: {
+    message_id: number;
+    chat: { id: number; type: string; first_name?: string; username?: string };
+    text?: string;
+    caption?: string;
+    photo?: { file_id: string; width: number; height: number; file_size?: number }[];
+    document?: { file_id: string; mime_type?: string; file_name?: string; file_size?: number };
+  };
 }
+
+/** Limite de download de arquivos pela Bot API. */
+export const MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024;
 
 export function telegramConfigured(): boolean {
   return Boolean(config.TELEGRAM_BOT_TOKEN && config.TELEGRAM_CHAT_ID);
@@ -68,4 +78,29 @@ export async function getMe(token?: string) {
 
 export async function getUpdates(offset?: number, timeoutSec = 0, token?: string): Promise<TgUpdate[]> {
   return call<TgUpdate[]>('getUpdates', { offset, timeout: timeoutSec, allowed_updates: ['message'] }, token);
+}
+
+/** Imagem anexada à mensagem: maior resolução de uma foto, ou documento image/*. */
+export function messageImage(msg: NonNullable<TgUpdate['message']>): { fileId: string; mimeType?: string; size?: number } | null {
+  const photo = msg.photo?.reduce((a, b) => (b.width * b.height > a.width * a.height ? b : a));
+  if (photo) return { fileId: photo.file_id, mimeType: 'image/jpeg', size: photo.file_size };
+  if (msg.document?.mime_type?.startsWith('image/')) {
+    return { fileId: msg.document.file_id, mimeType: msg.document.mime_type, size: msg.document.file_size };
+  }
+  return null;
+}
+
+/** Baixa um arquivo enviado ao bot. A URL contém o token e nunca vai para logs ou erros. */
+export async function downloadFile(fileId: string, token = config.TELEGRAM_BOT_TOKEN): Promise<{ data: Buffer; path: string }> {
+  const file = await call<{ file_path?: string; file_size?: number }>('getFile', { file_id: fileId }, token);
+  if (!file.file_path) throw new Error('Telegram não disponibilizou o arquivo.');
+  if ((file.file_size ?? 0) > MAX_DOWNLOAD_BYTES) throw new Error('Arquivo acima de 20 MB.');
+  let res: Response;
+  try {
+    res = await fetch(`https://api.telegram.org/file/bot${token}/${file.file_path}`);
+  } catch {
+    throw new Error('Falha de rede ao baixar a imagem do Telegram.');
+  }
+  if (!res.ok) throw new Error(`Falha ao baixar a imagem do Telegram (HTTP ${res.status}).`);
+  return { data: Buffer.from(await res.arrayBuffer()), path: file.file_path };
 }

@@ -10,8 +10,15 @@ const LABEL = {
   review: '🔎 Revisão manual — avaliação parcial',
 };
 
-export function formatInbox(reports: InboxVerdict[], projections: Map<string, Projection>): string {
-  const lines = ['📬 <b>Propostas de trade recebidas</b>'];
+export interface InboxFormat {
+  /** Título já em HTML. */
+  title?: string;
+  /** Proposta lida de outra fonte (ex.: imagem), sem ID de transação do Sleeper. */
+  hideId?: boolean;
+}
+
+export function formatInbox(reports: InboxVerdict[], projections: Map<string, Projection>, opts: InboxFormat = {}): string {
+  const lines = [opts.title ?? '📬 <b>Propostas de trade recebidas</b>'];
   if (!reports.length) return lines.concat('', 'Nenhuma proposta recebida aguardando seu aceite.').join('\n');
   const player = (id: string) => {
     const p = projections.get(id);
@@ -34,7 +41,7 @@ export function formatInbox(reports: InboxVerdict[], projections: Map<string, Pr
         `Recebo: ${r.counter.get.map(p => player(p.sleeperId)).join(' + ')}`,
         `Ganho ROS: meu time ${signed(r.counter.myGain)} · parceiro ${signed(r.counter.theirGain)} pts`);
     }
-    lines.push(`<code>${e(r.transactionId)}</code>`);
+    if (!opts.hideId) lines.push(`<code>${e(r.transactionId)}</code>`);
   }
   lines.push('', '<i>Análise informativa; nenhuma proposta foi aceita, rejeitada ou enviada.</i>');
   return lines.join('\n');

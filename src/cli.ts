@@ -4,7 +4,8 @@ import { describeError } from './errors.js';
 import { log } from './log.js';
 import { requireLeagueId } from './config.js';
 import { loadLeague } from './league/settings.js';
-import { runInboxJob, runClaimsJob, runInjuriesJob, runLineupJob, runTradesJob, runWaiversJob, type JobResult } from './jobs/analysis.js';
+import { readFile } from 'node:fs/promises';
+import { runInboxJob, runClaimsJob, runInjuriesJob, runLineupJob, runTradeImageJob, runTradesJob, runWaiversJob, type JobResult } from './jobs/analysis.js';
 import { runBacktest } from './jobs/backtest.js';
 import { runBot } from './jobs/bot.js';
 import { runSetup } from './jobs/setup.js';
@@ -89,6 +90,15 @@ program
   .option('-l, --league-id <id>', 'analisa somente esta liga')
   .option('-n, --notify', 'envia no Telegram')
   .action(async (o) => print(await runTradesJob({ ...o, partner: o.team })));
+
+program
+  .command('trade-image')
+  .description('avalia uma troca a partir de um print do Sleeper (requer ANTHROPIC_API_KEY)')
+  .argument('<arquivo>', 'imagem JPEG, PNG, GIF ou WebP')
+  .option('-c, --caption <texto>', 'legenda; o nome de uma liga restringe a busca')
+  .option('-l, --league-id <id>', 'considera somente esta liga')
+  .option('-n, --notify', 'envia no Telegram')
+  .action(async (file: string, o) => print(await runTradeImageJob({ ...o, image: await readFile(file) })));
 
 program
   .command('injuries')

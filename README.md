@@ -42,6 +42,7 @@ pnpm cli claims [--notify]         # avalia seus lances de waiver pendentes
 pnpm cli trades [--team <nome>] [--notify]
 pnpm cli inbox [--league-id ID] [--notify]  # propostas de trade recebidas
 pnpm cli injuries [--notify]
+pnpm cli trade-image print.png [--caption "nome da liga"] [--notify]  # trade calculator por imagem
 pnpm cli backtest --weeks 2-6     # erro do modelo vs baseline (média da temporada)
 pnpm cli bot                      # daemon: envia mensagens e responde comandos
 ```
@@ -49,7 +50,8 @@ pnpm cli bot                      # daemon: envia mensagens e responde comandos
 Sem `--notify` o resultado só aparece no terminal. No Telegram, o bot responde a `/lineup`, `/waivers`,
 `/claims`, `/trades [time]`, `/inbox` e `/injuries`, mas só no chat configurado.
 Os comandos analisam todas as ligas configuradas; use `--league-id ID` no terminal para selecionar uma.
-`claims` e `inbox` exigem `SLEEPER_TOKEN` configurado.
+`claims` e `inbox` exigem `SLEEPER_TOKEN` configurado. Para avaliar trocas por imagem, envie ao bot um print da tela de
+trade do Sleeper; isso exige `ANTHROPIC_API_KEY`.
 
 ## Agendamento (systemd)
 
@@ -141,6 +143,12 @@ O relatório mostra jogadores, picks e FAAB enviados/recebidos, impacto no lineu
 Picks e FAAB são exibidos separadamente, sem conversão inventada para pontos. Propostas com esses ativos, jogadores sem projeção, vagas excedentes ou IR/taxi exigem revisão manual. Na dynasty, o relatório também sinaliza que o modelo atual considera idade e o restante desta temporada, não o valor completo de carreiras futuras.
 
 O timer `sleeper-personal-assistant-inbox.timer` verifica as duas ligas a cada 15 minutos, usando `inbox --notify --new-only`. Só propostas novas ou alteradas geram alertas; inbox vazio fica silencioso e mudanças nas projeções não reenviam a mesma oferta. A deduplicação fica no outbox do Postgres e sobrevive a reinicializações. O instalador `deploy/install-systemd.sh` inclui esse timer.
+
+### Trade calculator por imagem
+
+Envie ao bot um print de uma proposta de troca do Sleeper (foto ou arquivo de imagem). O Claude (`ANTHROPIC_MODEL`, padrão `claude-opus-5-5`) lê os jogadores, picks e FAAB de cada lado; os IDs são procurados somente nos rosters sincronizados das ligas configuradas, com nome completo ou inicial + sobrenome, usando posição e time para desempatar. A liga é a única em que um lado casa inteiramente com o seu roster e o outro com um único adversário. Se a legenda citar o nome de uma liga, a busca fica restrita a ela. Nomes não encontrados, ambíguos ou casamento em mais de uma liga interrompem a análise e são listados, sem chute.
+
+A avaliação é a mesma do inbox: lineup ótimo desta semana e do restante da temporada, valor posicional, ganho do parceiro e possível alternativa. Depois o Claude escreve um comentário curto a partir desses números, sem alterar o veredito; se essa etapa falhar, o relatório segue sem comentário. A leitura da imagem aparece no fim da mensagem para conferência. No terminal, use `pnpm cli trade-image arquivo.png`.
 
 ### Renomeação do projeto
 

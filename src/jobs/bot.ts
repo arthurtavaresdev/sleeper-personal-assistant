@@ -3,8 +3,8 @@ import { withJobLock } from '../db/index.js';
 import { log } from '../log.js';
 import { connectionNotifier } from '../notify/connection.js';
 import { listenOutbox } from '../notify/outbox.js';
-import { escapeHtml, getUpdates, sendMessage } from '../notify/telegram.js';
-import { runInboxJob, runClaimsJob, runInjuriesJob, runLineupJob, runTradesJob, runWaiversJob, type JobOptions, type JobResult } from './analysis.js';
+import { downloadFile, escapeHtml, getUpdates, MAX_DOWNLOAD_BYTES, messageImage, sendMessage } from '../notify/telegram.js';
+import { runInboxJob, runClaimsJob, runInjuriesJob, runLineupJob, runTradeImageJob, runTradesJob, runWaiversJob, type JobOptions, type JobResult } from './analysis.js';
 
 const HELP = [
   '<b>Sleeper Personal Assistant</b>',
@@ -15,6 +15,7 @@ const HELP = [
   '/trades [time] — ideias de troca',
   '/inbox — propostas de trade recebidas e avaliação',
   '/injuries — status de lesão do seu time',
+  '📷 Envie um print de trade do Sleeper para avaliar a troca (legenda opcional com o nome da liga)',
 ].join('\n');
 
 const COMMANDS: Record<string, (args: string, opts: JobOptions) => Promise<JobResult>> = {
@@ -57,7 +58,21 @@ async function pollBot(): Promise<never> {
     for (const u of updates) {
       offset = u.update_id + 1;
       const msg = u.message;
-      if (!msg?.text || String(msg.chat.id) !== config.TELEGRAM_CHAT_ID) continue;
+      if (!msg || String(msg.chat.id) !== config.TELEGRAM_CHAT_ID) continue;
+      const image = messageImage(msg);
+      if (image) {
+        if ((image.size ?? 0) > MAX_DOWNLOAD_BYTES) {
+          await sendMessage('❌ Imagem acima de 20 MB.').catch(() => {});
+          continue;
+        }
+        await sendMessage('⏳ Lendo a imagem…').catch(() => {});
+        await respond('imagem', async (opts) => {
+          const file = await downloadFile(image.fileId);
+          return runTradeImageJob({ ...opts, image: file.data, mediaType: image.mimeType, caption: msg.caption });
+        });
+        continue;
+      }
+      if (!msg.text) continue;
       const [cmdRaw, ...rest] = msg.text.trim().split(/\s+/);
       const cmd = cmdRaw!.toLowerCase().replace(/@.*$/, '');
       const handler = COMMANDS[cmd];
@@ -66,14 +81,18 @@ async function pollBot(): Promise<never> {
         continue;
       }
       await sendMessage('⏳ Calculando…').catch(() => {});
-      try {
-        // force: o usuário pediu explicitamente, envia mesmo se igual ao último relatório
-        const res = await handler(rest.join(' '), { notify: true, force: true });
-        if (!res.delivered) await sendMessage(res.text);
-      } catch (err) {
-        log.error({ err, cmd }, 'erro no comando');
-        await sendMessage(`❌ Erro: ${escapeHtml(String(err instanceof Error ? err.message : err))}`).catch(() => {});
-      }
+      await respond(cmd, (opts) => handler(rest.join(' '), opts));
     }
+  }
+}
+
+async function respond(cmd: string, run: (opts: JobOptions) => Promise<JobResult>): Promise<void> {
+  try {
+    // force: o usuário pediu explicitamente, envia mesmo se igual ao último relatório
+    const res = await run({ notify: true, force: true });
+    if (!res.delivered) await sendMessage(res.text);
+  } catch (err) {
+    log.error({ err, cmd }, 'erro no comando');
+    await sendMessage(`❌ Erro: ${escapeHtml(String(err instanceof Error ? err.message : err))}`).catch(() => {});
   }
 }

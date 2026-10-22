@@ -103,16 +103,20 @@ export async function analyzeInbox(ctx: AnalysisContext, trades: TradeTransactio
   const reports: InboxVerdict[] = [];
   for (const t of incoming) {
     const report = evaluateInboxTrade(ctx, t);
-    if (report.verdict !== 'review' && report.verdict !== 'favorable' && report.partners.length === 1) {
-      const ideas = await analyzeTrades(ctx, { partner: report.partners[0]!.ownerName, limit: 20 });
-      report.counter = ideas.find(idea => idea.partner.rosterId === report.partners[0]!.rosterId
-        && idea.get.some(p => report.get.includes(p.sleeperId))
-        && !(idea.give.length === report.give.length && idea.get.length === report.get.length
-          && idea.give.every(p => report.give.includes(p.sleeperId)) && idea.get.every(p => report.get.includes(p.sleeperId))));
-    }
+    report.counter = await findCounter(ctx, report);
     reports.push(report);
   }
   return reports;
+}
+
+/** Alternativa com o mesmo parceiro quando a proposta não é claramente boa. */
+export async function findCounter(ctx: AnalysisContext, report: InboxVerdict): Promise<TradeIdea | undefined> {
+  if (report.verdict === 'review' || report.verdict === 'favorable' || report.partners.length !== 1) return undefined;
+  const ideas = await analyzeTrades(ctx, { partner: report.partners[0]!.ownerName, limit: 20 });
+  return ideas.find(idea => idea.partner.rosterId === report.partners[0]!.rosterId
+    && idea.get.some(p => report.get.includes(p.sleeperId))
+    && !(idea.give.length === report.give.length && idea.get.length === report.get.length
+      && idea.give.every(p => report.give.includes(p.sleeperId)) && idea.get.every(p => report.get.includes(p.sleeperId))));
 }
 
 /** Identifica alterações da oferta, independentemente de mudanças nas projeções. */
