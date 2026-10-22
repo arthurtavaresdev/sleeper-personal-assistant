@@ -2,7 +2,7 @@ services:
   db:
     image: docker.io/library/postgres:17
     container_name: sleeper-personal-assistant-db
-    restart: unless-stopped
+    restart: always # podman-restart.service só religa "always" após reboot
     environment:
       POSTGRES_USER: sleeper
       POSTGRES_PASSWORD: sleeper

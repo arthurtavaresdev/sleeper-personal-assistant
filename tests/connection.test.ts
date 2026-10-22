@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { connectionNotifier } from '../src/notify/connection.js';
 describe('connection notifications', () => {
-  it('announces startup once and each recovery once', async () => {
+  it('announces only once per process, including after recoveries', async () => {
     const send = vi.fn(async (_message: string) => {});
     const connection = connectionNotifier(send);
     await connection.connected();
@@ -12,8 +12,8 @@ describe('connection notifications', () => {
     connection.disconnected();
     await connection.connected();
     await connection.connected();
-    expect(send).toHaveBeenCalledTimes(2);
-    expect(send.mock.calls[1]![0]).toContain('Sleeper Personal Assistant conectado.');
+    expect(send).toHaveBeenCalledTimes(1);
+    // Sem isso o bot ficaria preso em getUpdates com timeout 0
     expect(connection.pending).toBe(false);
   });
   it('retries the confirmation if sending fails', async () => {

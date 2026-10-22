@@ -59,7 +59,7 @@ Sleeper Personal Assistant é um assistente pessoal de fantasy NFL em TypeScript
 - Nunca versione ou exponha `.env`, tokens, cookies ou headers de autorização. Documente somente nomes das variáveis no `.env.example`; não imprima segredos em logs ou diagnósticos.
 - O bot só atende o `TELEGRAM_CHAT_ID` configurado. Valide token/chat antes de iniciar e mantenha a trava que impede duas instâncias de long polling.
 - O serviço systemd é a instância operacional. Não execute `pnpm cli bot` simultaneamente ao serviço.
-- Envie confirmação de conexão no início e após recuperação de falha, uma vez por transição; não a cada poll bem-sucedido.
+- Envie confirmação de conexão uma única vez por processo, no início; recuperações de falha não reenviam. Após falha, o long poll deve voltar ao timeout normal.
 - Preserve outbox, deduplicação e locks de envio. Escape dados externos em HTML e respeite limites de mensagem do Telegram.
 - Operação usa `America/Sao_Paulo`; considere jogos internacionais e kickoff ao ajustar horários.
 - Após mudanças de código/configuração do daemon, reinicie `systemctl --user restart sleeper-personal-assistant-bot.service` quando fizer parte da tarefa autorizada. A reinicialização envia uma confirmação ao usuário.

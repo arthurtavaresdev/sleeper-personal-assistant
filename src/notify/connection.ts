@@ -1,4 +1,4 @@
-/** Uma confirmação por início ou recuperação, sem repetir a cada long poll. */
+/** Uma confirmação por processo; falhas posteriores voltam ao long poll sem novo anúncio. */
 export function connectionNotifier(send: (message: string) => Promise<void>) {
   let pending = true;
   let announced = false;
@@ -6,9 +6,11 @@ export function connectionNotifier(send: (message: string) => Promise<void>) {
     disconnected() { pending = true; },
     get pending() { return pending; },
     async connected() {
-      if (!pending || announced) return;
-      await send('✅ <b>Sleeper Trader conectado.</b> Estou pronto para receber comandos.');
-      announced = true;
+      if (!pending) return;
+      if (!announced) {
+        await send('✅ <b>Sleeper Personal Assistant conectado.</b> Estou pronto para receber comandos.');
+        announced = true;
+      }
       pending = false;
     },
   };

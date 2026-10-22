@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { sql } from './db/index.js';
+import { describeError } from './errors.js';
 import { log } from './log.js';
 import { requireLeagueId } from './config.js';
 import { loadLeague } from './league/settings.js';
@@ -126,7 +127,7 @@ program
     if (cmd.args[0] !== 'bot') await sql.end();
   })
   .catch(async (err) => {
-    log.error(err instanceof Error ? err.message : err);
+    log.error({ err }, describeError(err));
     await sql.end({ timeout: 1 });
     process.exitCode = 1;
   });
