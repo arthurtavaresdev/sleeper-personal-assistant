@@ -184,7 +184,9 @@ async function forLeagues<T extends JobOptions>(opts: T, job: (o: T) => Promise<
       log.error({ err, leagueId }, 'falha na análise da liga');
       const text = `Liga ${leagueId}: ${escapeHtml(err instanceof Error ? err.message : String(err))}`;
       if (opts.notify) {
-        await enqueue('error', `${leagueId}:${Date.now()}`, text);
+        // O mesmo erro na mesma liga é avisado uma vez por dia, não a cada execução do timer
+        const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+        await enqueue('error', `${leagueId}:${day}`, text);
         await drainOutbox();
       }
       results.push({ text, delivered: Boolean(opts.notify) });

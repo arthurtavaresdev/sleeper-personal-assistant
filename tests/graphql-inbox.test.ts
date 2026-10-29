@@ -21,6 +21,13 @@ describe('inbox GraphQL reads', () => {
     await expect(myTradeInbox('111"', 1, 'u1')).rejects.toThrow('inválidos'); expect(fetch).not.toHaveBeenCalled();
     await expect(myTradeInbox('111', 1, 'u1')).rejects.toThrow('expirado');
   });
+  it('parses draft picks returned as CSV strings', async () => {
+    config.SLEEPER_TOKEN = 'test';
+    const trade = { ...offer(), draft_picks: ['7,2027,3,1,2'] };
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ data: { league_transactions_filtered: [trade] } }))));
+    const [t] = await myTradeInbox('111', 1, 'u1');
+    expect(t!.draft_picks).toEqual([{ roster_id: 7, season: '2027', round: 3, owner_id: 1, previous_owner_id: 2 }]);
+  });
   it('does not interpret missing consents as an incoming proposal', async () => {
     config.SLEEPER_TOKEN = 'test'; const malformed = { ...offer(), consenter_ids: undefined };
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ data: { league_transactions_filtered: [malformed] } }))));
