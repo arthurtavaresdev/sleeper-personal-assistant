@@ -90,17 +90,37 @@ export function messageImage(msg: NonNullable<TgUpdate['message']>): { fileId: s
   return null;
 }
 
-/** Baixa um arquivo enviado ao bot. A URL contém o token e nunca vai para logs ou erros. */
-export async function downloadFile(fileId: string, token = config.TELEGRAM_BOT_TOKEN): Promise<{ data: Buffer; path: string }> {
-  const file = await call<{ file_path?: string; file_size?: number }>('getFile', { file_id: fileId }, token);
-  if (!file.file_path) throw new Error('Telegram não disponibilizou o arquivo.');
-  if ((file.file_size ?? 0) > MAX_DOWNLOAD_BYTES) throw new Error('Arquivo acima de 20 MB.');
-  let res: Response;
-  try {
-    res = await fetch(`https://api.telegram.org/file/bot${token}/${file.file_path}`);
-  } catch {
-    throw new Error('Falha de rede ao baixar a imagem do Telegram.');
+/** Código do erro de rede (ex.: ETIMEDOUT), sem a URL — que contém o token. */
+function networkCode(err: unknown): string {
+  const cause = (err as { cause?: { code?: unknown; errors?: { code?: unknown }[] } })?.cause;
+  const code = cause?.code ?? cause?.errors?.[0]?.code;
+  return typeof code === 'string' && /^[A-Z_]+$/.test(code) ? ` (${code})` : '';
+}
+
+/**
+ * Baixa um arquivo enviado ao bot. A URL contém o token e nunca vai para logs ou erros.
+ * Falhas de rede e HTTP 5xx são repetidas: são operações de leitura, idempotentes.
+ */
+export async function downloadFile(
+  fileId: string,
+  token = config.TELEGRAM_BOT_TOKEN,
+  delayMs = (attempt: number) => 2 ** attempt * 1000,
+): Promise<{ data: Buffer; path: string }> {
+  for (let attempt = 1; ; attempt++) {
+    let failure: string;
+    try {
+      const file = await call<{ file_path?: string; file_size?: number }>('getFile', { file_id: fileId }, token);
+      if (!file.file_path) throw new Error('Telegram não disponibilizou o arquivo.');
+      if ((file.file_size ?? 0) > MAX_DOWNLOAD_BYTES) throw new Error('Arquivo acima de 20 MB.');
+      const res = await fetch(`https://api.telegram.org/file/bot${token}/${file.file_path}`);
+      if (res.ok) return { data: Buffer.from(await res.arrayBuffer()), path: file.file_path };
+      if (res.status < 500) throw new Error(`Falha ao baixar a imagem do Telegram (HTTP ${res.status}).`);
+      failure = `Falha ao baixar a imagem do Telegram (HTTP ${res.status}).`;
+    } catch (err) {
+      if (!(err instanceof TypeError)) throw err;
+      failure = `Falha de rede ao baixar a imagem do Telegram${networkCode(err)}.`;
+    }
+    if (attempt >= 4) throw new Error(`${failure} Tente reenviar.`);
+    await new Promise((r) => setTimeout(r, delayMs(attempt)));
   }
-  if (!res.ok) throw new Error(`Falha ao baixar a imagem do Telegram (HTTP ${res.status}).`);
-  return { data: Buffer.from(await res.arrayBuffer()), path: file.file_path };
 }
