@@ -15,6 +15,11 @@ const schema = z.object({
   TELEGRAM_CHAT_ID: z.string().trim().optional().default(''),
   TZ: z.string().default('America/Sao_Paulo'),
   LOG_LEVEL: z.string().default('info'),
+  /** Diretório dos logs em texto (relativo à raiz do projeto). Vazio desativa os arquivos. */
+  LOG_DIR: z.string().trim().default('logs'),
+  /** Arquivos rotacionados mantidos (diários ou a cada 10 MB). */
+  LOG_RETENTION_FILES: z.coerce.number().int().positive().default(14),
+  LOG_ERROR_RETENTION_FILES: z.coerce.number().int().positive().default(90),
 });
 
 export const config = schema.parse(process.env);

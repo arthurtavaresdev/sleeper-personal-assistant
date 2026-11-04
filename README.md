@@ -72,6 +72,17 @@ Instala units de usuário apontando para este diretório e para o Node atual (fu
 `Persistent=true` executa na próxima inicialização o que foi perdido com o PC desligado.
 Acompanhe com `systemctl --user list-timers 'sleeper-personal-assistant-*'` e `journalctl --user -u 'sleeper-personal-assistant*'`.
 
+### Logs em arquivo
+
+Todo processo (bot e timers) também grava logs em texto em `logs/` (ignorado pelo git):
+
+- `logs/app/app.AAAA-MM-DD.N.txt`: tudo a partir de `LOG_LEVEL`, mantidos os últimos 14 arquivos.
+- `logs/errors/errors.AAAA-MM-DD.N.txt`: só `warn`, `error` e `fatal`, mantidos os últimos 90 — o histórico de falhas.
+
+Os arquivos rodam por dia ou a cada 10 MB, e a limpeza acontece na virada do bot. Cada linha traz horário com fuso, PID e comando; erros incluem o stack e a cadeia de causas (ex.: `Sleeper /league/…: falha de rede (ENOTFOUND) após 4 tentativas`, em vez do genérico `fetch failed`). Tokens e senhas do `.env` são mascarados. Ajuste com `LOG_DIR` (vazio desativa), `LOG_RETENTION_FILES` e `LOG_ERROR_RETENTION_FILES`.
+
+Ex.: `tail -f logs/errors/errors.$(date +%F).1.txt` ou `grep -h 'falha de rede' logs/errors/*.txt`.
+
 ## Como funciona
 
 ```

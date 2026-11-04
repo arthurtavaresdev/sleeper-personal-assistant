@@ -1,4 +1,5 @@
 import { config } from '../config.js';
+import { networkCode } from '../errors.js';
 
 const MAX_LEN = 4000; // limite da API é 4096
 
@@ -91,12 +92,6 @@ export function messageImage(msg: NonNullable<TgUpdate['message']>): { fileId: s
 }
 
 /** Código do erro de rede (ex.: ETIMEDOUT), sem a URL — que contém o token. */
-function networkCode(err: unknown): string {
-  const cause = (err as { cause?: { code?: unknown; errors?: { code?: unknown }[] } })?.cause;
-  const code = cause?.code ?? cause?.errors?.[0]?.code;
-  return typeof code === 'string' && /^[A-Z_]+$/.test(code) ? ` (${code})` : '';
-}
-
 /**
  * Baixa um arquivo enviado ao bot. A URL contém o token e nunca vai para logs ou erros.
  * Falhas de rede e HTTP 5xx são repetidas: são operações de leitura, idempotentes.

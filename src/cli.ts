@@ -130,6 +130,16 @@ program
   .description('daemon: envia o outbox e responde comandos no Telegram')
   .action(() => runBot());
 
+// Falhas fora de qualquer try/catch também vão para o histórico antes de encerrar
+process.on('unhandledRejection', (reason) => {
+  log.fatal({ err: reason }, `promise rejeitada sem tratamento: ${describeError(reason)}`);
+  process.exitCode = 1;
+});
+process.on('uncaughtException', (err) => {
+  log.fatal({ err }, `exceção não tratada: ${describeError(err)}`);
+  process.exit(1);
+});
+
 program
   .parseAsync()
   .then(async (cmd) => {
@@ -137,7 +147,7 @@ program
     if (cmd.args[0] !== 'bot') await sql.end();
   })
   .catch(async (err) => {
-    log.error({ err }, describeError(err));
+    log.error({ err, args: process.argv.slice(2) }, describeError(err));
     await sql.end({ timeout: 1 });
     process.exitCode = 1;
   });

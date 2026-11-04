@@ -1,5 +1,6 @@
 import { copyCsvToStaging, isFresh, markFetched, sql } from '../db/index.js';
 import { log } from '../log.js';
+import { networkFailure } from '../errors.js';
 
 const RELEASES = 'https://github.com/nflverse/nflverse-data/releases/download';
 const IDS_URL = 'https://github.com/dynastyprocess/data/raw/master/files/db_playerids.csv';
@@ -8,7 +9,9 @@ const IDS_URL = 'https://github.com/dynastyprocess/data/raw/master/files/db_play
 const NUMERIC_RE = '^-?[0-9]+(\\.[0-9]+)?([eE][-+]?[0-9]+)?$';
 
 async function fetchCsv(url: string): Promise<ReadableStream<Uint8Array>> {
-  const res = await fetch(url, { redirect: 'follow' });
+  const res = await fetch(url, { redirect: 'follow' }).catch((err: unknown) => {
+    throw networkFailure(`nflverse ${url}`, err);
+  });
   if (!res.ok || !res.body) throw new Error(`nflverse ${url}: HTTP ${res.status}`);
   return res.body;
 }

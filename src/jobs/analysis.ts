@@ -9,6 +9,7 @@ import { analyzeTrades, tradeWindowOpen } from '../analysis/trades.js';
 import { analyzeWaivers } from '../analysis/waivers.js';
 import { sql, withJobLock } from '../db/index.js';
 import { syncPlayers } from '../data/sleeperSync.js';
+import { describeError } from '../errors.js';
 import { log } from '../log.js';
 import { selectedLeagueIds } from '../league/selection.js';
 import { escapeHtml } from '../notify/telegram.js';
@@ -181,8 +182,8 @@ async function forLeagues<T extends JobOptions>(opts: T, job: (o: T) => Promise<
         results.push(result);
       }
     } catch (err) {
-      log.error({ err, leagueId }, 'falha na análise da liga');
-      const text = `Liga ${leagueId}: ${escapeHtml(err instanceof Error ? err.message : String(err))}`;
+      log.error({ err, leagueId }, `falha na análise da liga: ${describeError(err)}`);
+      const text = `Liga ${leagueId}: ${escapeHtml(describeError(err))}`;
       if (opts.notify) {
         // O mesmo erro na mesma liga é avisado uma vez por dia, não a cada execução do timer
         const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());

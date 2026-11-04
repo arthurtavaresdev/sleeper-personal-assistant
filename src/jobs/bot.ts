@@ -31,6 +31,9 @@ const COMMANDS: Record<string, (args: string, opts: JobOptions) => Promise<JobRe
  * Daemon: envia o outbox assim que um job enfileira (LISTEN/NOTIFY) e responde
  * comandos via long polling. Só o chat configurado é atendido.
  */
+/** Avisos auxiliares ("Calculando…") não interrompem o comando, mas a falha fica registrada. */
+const logSendFailure = (err: unknown) => log.warn({ err }, 'falha ao enviar mensagem auxiliar no Telegram');
+
 export async function runBot(): Promise<void> {
   if (!config.TELEGRAM_BOT_TOKEN || !config.TELEGRAM_CHAT_ID) {
     throw new Error('Configure TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID com pnpm cli setup antes de iniciar o bot.');
@@ -62,10 +65,10 @@ async function pollBot(): Promise<never> {
       const image = messageImage(msg);
       if (image) {
         if ((image.size ?? 0) > MAX_DOWNLOAD_BYTES) {
-          await sendMessage('❌ Imagem acima de 20 MB.').catch(() => {});
+          await sendMessage('❌ Imagem acima de 20 MB.').catch(logSendFailure);
           continue;
         }
-        await sendMessage('⏳ Lendo a imagem…').catch(() => {});
+        await sendMessage('⏳ Lendo a imagem…').catch(logSendFailure);
         await respond('imagem', async (opts) => {
           const file = await downloadFile(image.fileId);
           return runTradeImageJob({ ...opts, image: file.data, mediaType: image.mimeType, caption: msg.caption });
@@ -77,10 +80,10 @@ async function pollBot(): Promise<never> {
       const cmd = cmdRaw!.toLowerCase().replace(/@.*$/, '');
       const handler = COMMANDS[cmd];
       if (!handler) {
-        await sendMessage(HELP).catch(() => {});
+        await sendMessage(HELP).catch(logSendFailure);
         continue;
       }
-      await sendMessage('⏳ Calculando…').catch(() => {});
+      await sendMessage('⏳ Calculando…').catch(logSendFailure);
       await respond(cmd, (opts) => handler(rest.join(' '), opts));
     }
   }
@@ -93,6 +96,6 @@ async function respond(cmd: string, run: (opts: JobOptions) => Promise<JobResult
     if (!res.delivered) await sendMessage(res.text);
   } catch (err) {
     log.error({ err, cmd }, 'erro no comando');
-    await sendMessage(`❌ Erro: ${escapeHtml(String(err instanceof Error ? err.message : err))}`).catch(() => {});
+    await sendMessage(`❌ Erro: ${escapeHtml(String(err instanceof Error ? err.message : err))}`).catch(logSendFailure);
   }
 }

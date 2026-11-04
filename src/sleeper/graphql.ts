@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { config } from '../config.js';
+import { networkFailure } from '../errors.js';
 import { Transaction, TradeTransaction } from './types.js';
 
 /**
@@ -18,6 +19,8 @@ async function query<T extends z.ZodType>(op: string, gql: string, schema: T): P
     headers: { 'content-type': 'application/json', authorization: config.SLEEPER_TOKEN, 'x-sleeper-graphql-op': op },
     body: JSON.stringify({ operationName: op, variables: {}, query: gql }),
     signal: AbortSignal.timeout(20_000),
+  }).catch((err: unknown) => {
+    throw networkFailure(`Sleeper GraphQL ${op}`, err);
   });
   if (res.status === 401 || res.status === 403) throw new Error('SLEEPER_TOKEN inválido ou expirado');
   if (!res.ok) throw new Error(`Sleeper GraphQL ${op}: HTTP ${res.status}`);

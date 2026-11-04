@@ -1,11 +1,22 @@
 import { z } from 'zod';
+import { isNetworkError, networkFailure } from '../errors.js';
+import { log } from '../log.js';
 import { League, LeagueUser, Matchup, NflState, Roster, Transaction, Trending, User } from './types.js';
 
 const BASE = 'https://api.sleeper.app/v1';
 
 async function get<T extends z.ZodType>(path: string, schema: T): Promise<z.infer<T>> {
   for (let attempt = 1; ; attempt++) {
-    const res = await fetch(BASE + path);
+    let res: Response;
+    try {
+      res = await fetch(BASE + path, { signal: AbortSignal.timeout(30_000) });
+    } catch (err) {
+      // GETs são idempotentes: falhas de rede transitórias são repetidas com backoff
+      if (!isNetworkError(err) || attempt >= 4) throw networkFailure(`Sleeper ${path}`, err, attempt);
+      log.warn({ err, path, attempt }, 'falha de rede na API do Sleeper; tentando de novo');
+      await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+      continue;
+    }
     if (res.status === 429 || res.status >= 500) {
       if (attempt >= 4) throw new Error(`Sleeper ${path}: HTTP ${res.status}`);
       await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));

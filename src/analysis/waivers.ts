@@ -3,6 +3,7 @@ import { sleeper } from '../sleeper/client.js';
 import { clamp } from '../model/stats.js';
 import { activePlayers, type AnalysisContext } from './context.js';
 import { RosterValuer } from './valuation.js';
+import { log } from '../log.js';
 
 export interface WaiverMove {
   add: Projection;
@@ -26,7 +27,10 @@ export async function analyzeWaivers(ctx: AnalysisContext, limit = 5): Promise<W
   const valuer = RosterValuer.restOfSeason(league, weekProj, ros);
   const weekValuer = RosterValuer.singleWeek(league, weekProj, ctx.week);
 
-  const trending = new Map((await sleeper.trendingAdds(48, 100).catch(() => [])).map((t) => [t.player_id, t.count]));
+  const trending = new Map((await sleeper.trendingAdds(48, 100).catch((err) => {
+    log.warn({ err }, 'trending adds indisponível; waivers seguem sem esse sinal');
+    return [];
+  })).map((t) => [t.player_id, t.count]));
 
   // Free agents: projetados, não rostados; os melhores por posição em ROS
   const free = [...weekProj.values()].filter((p) => !ctx.rostered.has(p.sleeperId) && p.team);
