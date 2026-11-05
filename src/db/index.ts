@@ -93,6 +93,24 @@ export async function withJobLock<T>(job: string, fn: () => Promise<T>): Promise
   }
 }
 
+/**
+ * Executa fn sob um advisory lock de sessão, esperando se outro processo o detém.
+ * Serializa recursos compartilhados entre jobs simultâneos (ex.: tabelas de staging).
+ */
+export async function withAdvisoryLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const conn = await sql.reserve();
+  try {
+    await conn`SELECT pg_advisory_lock(hashtext(${key}))`;
+    try {
+      return await fn();
+    } finally {
+      await conn`SELECT pg_advisory_unlock(hashtext(${key}))`;
+    }
+  } finally {
+    conn.release();
+  }
+}
+
 /** true se a fonte foi buscada há menos de ttlHours. */
 export async function isFresh(source: string, ttlHours: number): Promise<boolean> {
   const [row] = await sql`

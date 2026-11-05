@@ -1,5 +1,11 @@
 import 'dotenv/config';
+import { setDefaultAutoSelectFamilyAttemptTimeout } from 'node:net';
 import { z } from 'zod';
+
+// Happy eyeballs do Node espera só 250 ms por endereço. Em redes sem rota IPv6, uma
+// conexão IPv4 um pouco mais lenta (~350 ms ao api.telegram.org) era abandonada e o
+// fetch falhava com AggregateError [ETIMEDOUT]. Vale para todos os fetch do processo.
+setDefaultAutoSelectFamilyAttemptTimeout(2000);
 
 const schema = z.object({
   DATABASE_URL: z.string().url(),

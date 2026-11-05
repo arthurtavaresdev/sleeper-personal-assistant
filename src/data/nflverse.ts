@@ -1,4 +1,4 @@
-import { copyCsvToStaging, isFresh, markFetched, sql } from '../db/index.js';
+import { copyCsvToStaging, isFresh, markFetched, sql, withAdvisoryLock } from '../db/index.js';
 import { log } from '../log.js';
 import { networkFailure } from '../errors.js';
 
@@ -27,12 +27,21 @@ async function loadSource(
     log.debug({ source }, 'fonte em cache');
     return false;
   }
-  const rows = await copyCsvToStaging(staging, await fetchCsv(url), { nullToken: opts.nullToken });
-  await upsert();
-  await sql.unsafe(`DROP TABLE ${staging}`);
-  await markFetched(source, rows);
-  log.info({ source, rows }, 'fonte carregada');
-  return true;
+  // Timers simultâneos (inbox, lineup, injuries…) disputam a mesma tabela de staging:
+  // sem o lock, dois CREATE TABLE concorrentes violam pg_type_typname_nsp_index.
+  return withAdvisoryLock(`staging:${staging}`, async () => {
+    // Outro processo pode ter carregado a fonte enquanto esperávamos o lock
+    if (!opts.force && (await isFresh(source, opts.ttlHours))) {
+      log.debug({ source }, 'fonte carregada por outro processo');
+      return false;
+    }
+    const rows = await copyCsvToStaging(staging, await fetchCsv(url), { nullToken: opts.nullToken });
+    await upsert();
+    await sql.unsafe(`DROP TABLE ${staging}`);
+    await markFetched(source, rows);
+    log.info({ source, rows }, 'fonte carregada');
+    return true;
+  });
 }
 
 function upsertPlayerWeeks() {
